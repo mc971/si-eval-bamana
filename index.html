@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SI Éval — Collecte Professeur</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --card: #21262d;
+    --accent: #f97316; --accent2: #3b82f6; --correct: #22c55e; --wrong: #ef4444;
+    --text: #e6edf3; --muted: #8b949e; --border: #30363d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh; padding: 16px;
+  }
+  .header { text-align: center; margin-bottom: 20px; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  .scan-btn {
+    width: 100%; padding: 18px; background: var(--accent); color: #fff; border: none;
+    border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer;
+    margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .scan-btn:active { transform: scale(0.98); }
+  .scan-btn.scanning { background: var(--wrong); }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+  .stat-card .val { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .stat-card .lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .table-container {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; margin-bottom: 16px; max-height: 40vh; overflow-y: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { position: sticky; top: 0; background: var(--card); color: var(--muted); padding: 10px 8px; text-align: left; font-weight: 600; z-index: 10; }
+  td { padding: 8px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  .note-cell { font-weight: 700; }
+  .note-good { color: var(--correct); }
+  .note-mid { color: #f59e0b; }
+  .note-bad { color: var(--wrong); }
+  .comment-cell { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .comment-expanded { white-space: normal; max-width: none; }
+
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn { padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; text-align: center; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-success { background: var(--correct); color: #fff; }
+  .btn-purple { background: #8b5cf6; color: #fff; }
+  .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: var(--wrong); color: #fff; }
+
+  .last-scan { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 13px; }
+  .last-scan .label { color: var(--muted); font-size: 11px; }
+  .last-scan .name { font-weight: 700; color: var(--accent); }
+
+  .charts-section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 16px; display: none;
+  }
+  .charts-section.visible { display: block; }
+  .charts-section h3 { font-size: 16px; margin-bottom: 16px; color: var(--accent); }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-box { background: var(--card); border-radius: 8px; padding: 12px; }
+  .chart-box h4 { font-size: 11px; color: var(--muted); margin-bottom: 8px; text-align: center; }
+  .chart-box canvas { width: 100% !important; height: 180px !important; }
+  @media (max-width: 600px) { .charts-grid { grid-template-columns: 1fr; } }
+
+  .comment-section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 16px; display: none;
+  }
+  .comment-section.visible { display: block; }
+  .comment-section h3 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
+  .comment-item {
+    background: var(--card); border-radius: 8px; padding: 12px; margin-bottom: 8px;
+    border-left: 3px solid var(--accent2);
+  }
+  .comment-item .author { font-weight: 700; color: var(--accent); font-size: 13px; }
+  .comment-item .meta { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+  .comment-item .text { color: var(--text); font-size: 13px; line-height: 1.5; }
+  .comment-item .difficulty { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px; }
+  .diff-easy { background: #0d2e1a; color: #22c55e; }
+  .diff-medium { background: #1a1a00; color: #f59e0b; }
+  .diff-hard { background: #2e0d0d; color: #ef4444; }
+
+  /* Scanner overlay */
+  .scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
+  .scanner-overlay.active { display: flex; }
+  .scanner-header { padding: 16px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; }
+  .scanner-header h2 { font-size: 16px; }
+  .scanner-header .close-btn { background: var(--wrong); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+  #video-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+  #video { width: 100%; height: 100%; object-fit: cover; }
+  .scan-frame { position: absolute; width: 250px; height: 250px; border: 3px solid var(--accent); border-radius: 20px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); }
+  .scan-hint { position: absolute; bottom: 40px; left: 0; right: 0; text-align: center; color: #fff; font-size: 14px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--correct); color: #fff; padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 14px; transition: transform 0.3s ease; z-index: 2000; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .manual-input { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 16px; }
+  .manual-input label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 6px; }
+  .manual-input textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px; font-family: monospace; font-size: 12px; resize: vertical; }
+  .manual-input .btn { width: 100%; margin-top: 8px; }
+
+  .help-section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: var(--muted); }
+  .help-section summary { cursor: pointer; font-weight: 600; color: var(--text); }
+  .help-section p { margin-top: 8px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📱 Collecte Évaluations SI</h1>
+  <p>Scannez les QR codes · Fusion CSV · Graphiques · Commentaires</p>
+</div>
+
+<div class="stats">
+  <div class="stat-card"><div class="val" id="count-scans">0</div><div class="lbl">Élèves</div></div>
+  <div class="stat-card"><div class="val" id="count-avg">—</div><div class="lbl">Moyenne</div></div>
+  <div class="stat-card"><div class="val" id="count-med">—</div><div class="lbl">Médiane</div></div>
+</div>
+
+<div class="last-scan" id="lastScan" style="display:none">
+  <div class="label">Dernier scan</div>
+  <div class="name" id="lastScanName">—</div>
+</div>
+
+<button class="scan-btn" id="scanBtn" onclick="startScan()">📷 Scanner un QR code</button>
+
+<details class="help-section">
+  <summary>❓ Problème avec le scanner ?</summary>
+  <p><strong>Si la caméra ne fonctionne pas :</strong></p>
+  <p>1. Vérifiez les permissions caméra dans les paramètres Android</p>
+  <p>2. Utilisez la saisie manuelle ci-dessous</p>
+  <p>3. Alternative : prenez une photo du QR code et utilisez Google Lens</p>
+</details>
+
+<div class="manual-input">
+  <label>Saisie manuelle (si QR code illisible)</label>
+  <textarea id="manualData" rows="3" placeholder="Collez ici le contenu Base64 du QR code..."></textarea>
+  <button class="btn btn-secondary" onclick="processManual()">➕ Ajouter manuellement</button>
+</div>
+
+<!-- CHARTS SECTION -->
+<div class="charts-section" id="chartsSection">
+  <h3>📊 Statistiques de la classe</h3>
+  <div class="charts-grid">
+    <div class="chart-box"><h4>Répartition des notes</h4><canvas id="chartPie"></canvas></div>
+    <div class="chart-box"><h4>Distribution (histogramme)</h4><canvas id="chartHist"></canvas></div>
+    <div class="chart-box"><h4>Moyennes par partie</h4><canvas id="chartBar"></canvas></div>
+    <div class="chart-box"><h4>Évolution des scans</h4><canvas id="chartLine"></canvas></div>
+  </div>
+</div>
+
+<!-- COMMENTAIRES SECTION -->
+<div class="comment-section" id="commentSection">
+  <h3>💬 Commentaires des élèves</h3>
+  <div id="commentsList"></div>
+</div>
+
+<div class="table-container" id="tableContainer">
+  <div class="empty-state" id="emptyState">
+    <div class="icon">📋</div>
+    <p>Aucune donnée collectée</p>
+    <p style="font-size:11px;margin-top:4px">Scannez un QR code pour commencer</p>
+  </div>
+  <table id="dataTable" style="display:none">
+    <thead><tr><th>N°</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>QCM</th><th>Calc</th><th>Total</th><th>Note</th><th>Commentaire</th></tr></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="actions">
+  <button class="btn btn-primary" onclick="downloadCSV()">⬇ CSV</button>
+  <button class="btn btn-success" onclick="downloadExcel()">📊 Excel</button>
+</div>
+<div class="actions">
+  <button class="btn btn-purple" onclick="downloadPDF()">📄 PDF</button>
+  <button class="btn btn-secondary" onclick="exportToSheets()">📤 Google Sheets</button>
+</div>
+<div class="actions">
+  <button class="btn btn-danger" onclick="clearAll()">🗑 Effacer tout</button>
+</div>
+
+<!-- Scanner Overlay -->
+<div class="scanner-overlay" id="scannerOverlay">
+  <div class="scanner-header">
+    <h2>📷 Scanner QR Code</h2>
+    <button class="close-btn" onclick="stopScan()">✕ Fermer</button>
+  </div>
+  <div id="video-container">
+    <video id="video" autoplay playsinline></video>
+    <div class="scan-frame"></div>
+    <div class="scan-hint">Placez le QR code dans le cadre</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Élève ajouté</div>
+
+<!-- Librairies -->
+<script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+// ===================== STATE =====================
+let scannedData = [];
+let qrScanner = null;
+let isScanning = false;
+let chartInstances = {};
+
+// ===================== QR DECODE =====================
+function decodeQRData(base64String) {
+  try {
+    const clean = base64String.replace(/\s/g, '');
+    const csvRow = decodeURIComponent(escape(atob(clean)));
+    const parts = csvRow.split(';');
+
+    const student = {
+      nom: parts[0] || '', prenom: parts[1] || '', classe: parts[2] || '',
+      date: parts[3] || '', heure: parts[4] || '',
+      answers: [], total: 0, note: 0, qcmCount: 0, calcCount: 0,
+      commentaire: '', difficulte: '', temps: ''
+    };
+
+    let idx = 5, qNum = 1;
+    while (idx + 2 < parts.length - 4) {
+      const qcm = parts[idx] === '1' || parts[idx] === 'Correct';
+      student.answers.push({ qcm: qcm, appNum: parts[idx + 1], points: parseInt(parts[idx + 2]) || 0 });
+      if (qcm) student.qcmCount++;
+      if ((parseInt(parts[idx + 2]) || 0) >= 1) student.calcCount++;
+      idx += 3; qNum++;
+    }
+
+    student.total = parseInt(parts[parts.length - 4]) || 0;
+    student.note = parseInt(parts[parts.length - 3]) || 0;
+    student.commentaire = parts[parts.length - 2] || '';
+    student.difficulte = parts[parts.length - 1] || '';
+    student.temps = parts[parts.length] || '';
+
+    return student;
+  } catch (e) {
+    console.error('Decode error:', e);
+    return null;
+  }
+}
+
+// ===================== SCANNER =====================
+async function startScan() {
+  if (isScanning) return;
+  isScanning = true;
+
+  const overlay = document.getElementById('scannerOverlay');
+  const btn = document.getElementById('scanBtn');
+  overlay.classList.add('active');
+  btn.classList.add('scanning');
+  btn.textContent = '🔴 Scan en cours...';
+
+  try {
+    const video = document.getElementById('video');
+    qrScanner = new QrScanner(video, result => {
+      console.log('QR detected:', result);
+      processQRData(result.data);
+      stopScan();
+    }, { highlightScanRegion: true, highlightCodeOutline: true, preferredCamera: 'environment' });
+    await qrScanner.start();
+  } catch (err) {
+    console.error('Camera error:', err);
+    alert('Erreur caméra: ' + err.message + '\n\nEssayez la saisie manuelle.');
+    stopScan();
+  }
+}
+
+function stopScan() {
+  isScanning = false;
+  if (qrScanner) { qrScanner.stop(); qrScanner.destroy(); qrScanner = null; }
+  document.getElementById('scannerOverlay').classList.remove('active');
+  const btn = document.getElementById('scanBtn');
+  btn.classList.remove('scanning');
+  btn.textContent = '📷 Scanner un QR code';
+}
+
+// ===================== PROCESS DATA =====================
+function processQRData(base64Data) {
+  const student = decodeQRData(base64Data);
+  if (!student) { showToast('❌ QR code invalide', true); return; }
+
+  const exists = scannedData.find(s => s.nom === student.nom && s.prenom === student.prenom);
+  if (exists) { showToast('⚠ Élève déjà scanné', true); return; }
+
+  scannedData.push(student);
+  updateDisplay();
+  updateCharts();
+  updateComments();
+  saveData();
+  showToast(`✓ ${student.prenom} ${student.nom} ajouté`);
+}
+
+function processManual() {
+  const text = document.getElementById('manualData').value.trim();
+  if (!text) return;
+  processQRData(text);
+  document.getElementById('manualData').value = '';
+}
+
+// ===================== DISPLAY =====================
+function updateDisplay() {
+  const countEl = document.getElementById('count-scans');
+  const avgEl = document.getElementById('count-avg');
+  const medEl = document.getElementById('count-med');
+  const emptyState = document.getElementById('emptyState');
+  const table = document.getElementById('dataTable');
+  const tbody = document.getElementById('tableBody');
+  const lastScan = document.getElementById('lastScan');
+  const lastScanName = document.getElementById('lastScanName');
+  const chartsSection = document.getElementById('chartsSection');
+  const commentSection = document.getElementById('commentSection');
+
+  countEl.textContent = scannedData.length;
+
+  if (scannedData.length === 0) {
+    emptyState.style.display = 'block';
+    table.style.display = 'none';
+    chartsSection.classList.remove('visible');
+    commentSection.classList.remove('visible');
+    avgEl.textContent = '—'; medEl.textContent = '—';
+    lastScan.style.display = 'none';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+  table.style.display = 'table';
+  chartsSection.classList.add('visible');
+  commentSection.classList.add('visible');
+
+  const last = scannedData[scannedData.length - 1];
+  lastScan.style.display = 'block';
+  lastScanName.textContent = `${last.prenom} ${last.nom} — ${last.note}/20`;
+
+  const notes = scannedData.map(s => s.note).sort((a, b) => a - b);
+  const avg = notes.reduce((a, b) => a + b, 0) / notes.length;
+  const med = notes.length % 2 === 0 ? (notes[notes.length/2 - 1] + notes[notes.length/2]) / 2 : notes[Math.floor(notes.length/2)];
+  avgEl.textContent = avg.toFixed(1);
+  medEl.textContent = med.toFixed(1);
+
+  tbody.innerHTML = '';
+  scannedData.forEach((st, i) => {
+    const tr = document.createElement('tr');
+    const noteClass = st.note >= 10 ? 'note-good' : st.note >= 5 ? 'note-mid' : 'note-bad';
+    tr.innerHTML = `<td>${i + 1}</td><td>${st.nom}</td><td>${st.prenom}</td><td>${st.classe}</td><td>${st.qcmCount}/8</td><td>${st.calcCount}/8</td><td>${st.total}/16</td><td class="note-cell ${noteClass}">${st.note}/20</td><td class="comment-cell" onclick="this.classList.toggle('comment-expanded')" title="${st.commentaire}">${st.commentaire || '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ===================== COMMENTAIRES =====================
+function updateComments() {
+  const container = document.getElementById('commentsList');
+  container.innerHTML = '';
+
+  const withComments = scannedData.filter(s => s.commentaire);
+  if (withComments.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;">Aucun commentaire pour le moment</p>';
+    return;
+  }
+
+  withComments.forEach(st => {
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    const diffClass = st.difficulte <= 2 ? 'diff-easy' : st.difficulte <= 3 ? 'diff-medium' : 'diff-hard';
+    const diffText = st.difficulte <= 2 ? 'Facile' : st.difficulte <= 3 ? 'Moyen' : 'Difficile';
+    div.innerHTML = `
+      <div class="author">${st.prenom} ${st.nom} — ${st.note}/20</div>
+      <div class="meta">${st.classe} · ${st.date}</div>
+      <div class="text">${st.commentaire}</div>
+      ${st.difficulte ? `<span class="difficulty ${diffClass}">Difficulté: ${st.difficulte}/5 (${diffText})</span>` : ''}
+      ${st.temps ? `<span class="difficulty" style="background:var(--surface);color:var(--muted);margin-left:4px;">⏱ ${st.temps} min</span>` : ''}
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ===================== CHARTS =====================
+function updateCharts() {
+  if (scannedData.length === 0) return;
+
+  Object.values(chartInstances).forEach(c => c.destroy());
+  chartInstances = {};
+
+  const notes = scannedData.map(s => s.note);
+
+  // Pie
+  const ranges = { '0-4': 0, '5-9': 0, '10-14': 0, '15-20': 0 };
+  notes.forEach(n => { if (n < 5) ranges['0-4']++; else if (n < 10) ranges['5-9']++; else if (n < 15) ranges['10-14']++; else ranges['15-20']++; });
+  const ctxPie = document.getElementById('chartPie').getContext('2d');
+  chartInstances.pie = new Chart(ctxPie, {
+    type: 'doughnut',
+    data: { labels: Object.keys(ranges), datasets: [{ data: Object.values(ranges), backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8b949e', font: { size: 10 }, boxWidth: 12 } } } }
+  });
+
+  // Histogramme
+  const bins = [0, 0, 0, 0, 0];
+  notes.forEach(n => { if (n <= 4) bins[0]++; else if (n <= 8) bins[1]++; else if (n <= 12) bins[2]++; else if (n <= 16) bins[3]++; else bins[4]++; });
+  const ctxHist = document.getElementById('chartHist').getContext('2d');
+  chartInstances.hist = new Chart(ctxHist, {
+    type: 'bar',
+    data: { labels: ['0-4', '5-8', '9-12', '13-16', '17-20'], datasets: [{ label: 'Élèves', data: bins, backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e', '#10b981'], borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: '#8b949e', stepSize: 1 }, grid: { color: '#30363d' } }, x: { ticks: { color: '#8b949e' }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+  });
+
+  // Bar - Moyennes par partie
+  const p1QCM = scannedData.map(s => s.answers.slice(0,4).filter(a => a.qcm).length);
+  const p1Calc = scannedData.map(s => s.answers.slice(0,4).filter(a => a.points >= 1).length);
+  const p2QCM = scannedData.map(s => s.answers.slice(4,8).filter(a => a.qcm).length);
+  const p2Calc = scannedData.map(s => s.answers.slice(4,8).filter(a => a.points >= 1).length);
+  const avg = arr => arr.reduce((a,b) => a+b, 0) / arr.length;
+  const ctxBar = document.getElementById('chartBar').getContext('2d');
+  chartInstances.bar = new Chart(ctxBar, {
+    type: 'bar',
+    data: { labels: ['P1 QCM', 'P1 Calc', 'P2 QCM', 'P2 Calc'], datasets: [{ label: 'Moyenne', data: [avg(p1QCM), avg(p1Calc), avg(p2QCM), avg(p2Calc)], backgroundColor: ['#f97316', '#3b82f6', '#f97316', '#3b82f6'], borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 4, ticks: { color: '#8b949e', stepSize: 1 }, grid: { color: '#30363d' } }, x: { ticks: { color: '#8b949e' }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+  });
+
+  // Line
+  const ctxLine = document.getElementById('chartLine').getContext('2d');
+  chartInstances.line = new Chart(ctxLine, {
+    type: 'line',
+    data: { labels: scannedData.map((_, i) => `E${i + 1}`), datasets: [{ label: 'Note', data: notes, borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', fill: true, tension: 0.3, pointRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 20, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }, x: { ticks: { color: '#8b949e' }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+  });
+}
+
+// ===================== CSV EXPORT =====================
+function downloadCSV() {
+  if (scannedData.length === 0) { showToast('❌ Aucune donnée', true); return; }
+
+  let csv = 'N°;Nom;Prénom;Classe;Date;Heure;QCM_OK;CALC_OK;';
+  const maxQ = Math.max(...scannedData.map(s => s.answers.length));
+  for (let i = 1; i <= maxQ; i++) csv += `Q${i}_QCM;Q${i}_AppNum;Q${i}_Points;`;
+  csv += 'Total;Note/20;Commentaire;Difficulte;Temps_min\n';
+
+  scannedData.forEach((st, i) => {
+    csv += `${i + 1};${st.nom};${st.prenom};${st.classe};${st.date};${st.heure};${st.qcmCount};${st.calcCount};`;
+    st.answers.forEach(a => { csv += `${a.qcm ? 'Correct' : 'Incorrect'};${a.appNum};${a.points};`; });
+    for (let j = st.answers.length; j < maxQ; j++) csv += '—;—;0;';
+    csv += `${st.total};${st.note};"${(st.commentaire || '').replace(/"/g, '""')}"`;${st.difficulte};${st.temps}\n`;
+  });
+
+  const notes = scannedData.map(s => s.note);
+  const avg = (notes.reduce((a,b) => a+b, 0) / notes.length).toFixed(2);
+  csv += `\nSTATISTIQUES;;;;;;;MOYENNE;${avg};MIN;${Math.min(...notes)};MAX;${Math.max(...notes)}\n`;
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `SI_Eval_Classe_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.csv`;
+  a.click(); showToast('✓ CSV téléchargé');
+}
+
+// ===================== EXCEL EXPORT =====================
+function downloadExcel() {
+  if (scannedData.length === 0) { showToast('❌ Aucune donnée', true); return; }
+
+  const ws_data = [
+    ['Évaluation SI - Collecte Professeur', '', '', '', '', '', '', '', '', '', ''],
+    ['Date', new Date().toLocaleDateString('fr-FR'), '', 'Nombre élèves', scannedData.length, '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', '', '', ''],
+    ['N°', 'Nom', 'Prénom', 'Classe', 'Date', 'Heure', 'QCM OK', 'Calc OK', 'Total', 'Note/20', 'Commentaire', 'Difficulté', 'Temps']
+  ];
+
+  scannedData.forEach((st, i) => {
+    ws_data.push([i + 1, st.nom, st.prenom, st.classe, st.date, st.heure, st.qcmCount, st.calcCount, st.total, st.note, st.commentaire, st.difficulte, st.temps]);
+  });
+
+  const notes = scannedData.map(s => s.note);
+  ws_data.push(['', '', '', '', '', '', '', '', '', '', '', '', '']);
+  ws_data.push(['STATISTIQUES', '', '', '', '', '', '', '', '', '', '', '', '']);
+  ws_data.push(['Moyenne', (notes.reduce((a,b) => a+b, 0) / notes.length).toFixed(2), '', 'Médiane', '', '', '', '', '', '', '', '', '']);
+  ws_data.push(['Minimum', Math.min(...notes), '', 'Maximum', Math.max(...notes), '', '', '', '', '', '', '', '']);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  ws['!cols'] = [{wch:5}, {wch:15}, {wch:15}, {wch:10}, {wch:12}, {wch:10}, {wch:8}, {wch:8}, {wch:8}, {wch:8}, {wch:30}, {wch:10}, {wch:8}];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Collecte');
+  XLSX.writeFile(wb, `SI_Eval_Classe_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.xlsx`);
+  showToast('✓ Excel téléchargé');
+}
+
+// ===================== PDF EXPORT =====================
+function downloadPDF() {
+  if (scannedData.length === 0) { showToast('❌ Aucune donnée', true); return; }
+
+  // Create a clean PDF container
+  const pdfContent = document.createElement('div');
+  pdfContent.style.cssText = 'background:#fff;color:#000;padding:20px;font-family:Arial,sans-serif;';
+
+  const date = new Date().toLocaleDateString('fr-FR');
+  const notes = scannedData.map(s => s.note);
+  const avg = (notes.reduce((a,b) => a+b, 0) / notes.length).toFixed(2);
+
+  let html = `
+    <h1 style="color:#333;border-bottom:2px solid #f97316;padding-bottom:10px;">Évaluation SI - Résultats de classe</h1>
+    <p><strong>Date:</strong> ${date} | <strong>Élèves:</strong> ${scannedData.length} | <strong>Moyenne:</strong> ${avg}/20</p>
+
+    <h2 style="color:#f97316;margin-top:20px;">Tableau des résultats</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;">
+      <thead>
+        <tr style="background:#f97316;color:#fff;">
+          <th style="padding:8px;border:1px solid #ddd;">N°</th>
+          <th style="padding:8px;border:1px solid #ddd;">Nom</th>
+          <th style="padding:8px;border:1px solid #ddd;">Prénom</th>
+          <th style="padding:8px;border:1px solid #ddd;">Classe</th>
+          <th style="padding:8px;border:1px solid #ddd;">QCM</th>
+          <th style="padding:8px;border:1px solid #ddd;">Calc</th>
+          <th style="padding:8px;border:1px solid #ddd;">Total</th>
+          <th style="padding:8px;border:1px solid #ddd;">Note</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  scannedData.forEach((st, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#f5f5f5';
+    html += `<tr style="background:${bg};">
+      <td style="padding:6px;border:1px solid #ddd;">${i+1}</td>
+      <td style="padding:6px;border:1px solid #ddd;">${st.nom}</td>
+      <td style="padding:6px;border:1px solid #ddd;">${st.prenom}</td>
+      <td style="padding:6px;border:1px solid #ddd;">${st.classe}</td>
+      <td style="padding:6px;border:1px solid #ddd;">${st.qcmCount}/8</td>
+      <td style="padding:6px;border:1px solid #ddd;">${st.calcCount}/8</td>
+      <td style="padding:6px;border:1px solid #ddd;">${st.total}/16</td>
+      <td style="padding:6px;border:1px solid #ddd;font-weight:bold;">${st.note}/20</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+
+  // Add comments section
+  const withComments = scannedData.filter(s => s.commentaire);
+  if (withComments.length > 0) {
+    html += `<h2 style="color:#f97316;margin-top:30px;">Commentaires des élèves</h2>`;
+    withComments.forEach(st => {
+      html += `<div style="background:#f9f9f9;border-left:4px solid #3b82f6;padding:10px;margin-bottom:8px;">
+        <strong>${st.prenom} ${st.nom}</strong> (${st.note}/20)<br>
+        <span style="color:#666;font-size:11px;">${st.classe}</span>
+        <p style="margin:5px 0;font-size:12px;">${st.commentaire}</p>
+        ${st.difficulte ? `<span style="font-size:11px;color:#666;">Difficulté: ${st.difficulte}/5</span>` : ''}
+        ${st.temps ? `<span style="font-size:11px;color:#666;"> · Temps: ${st.temps} min</span>` : ''}
+      </div>`;
+    });
+  }
+
+  html += `<p style="margin-top:30px;font-size:10px;color:#999;text-align:center;">Généré par SI Éval - Lycée Younoussa Bamana</p>`;
+
+  pdfContent.innerHTML = html;
+
+  const opt = {
+    margin: [15, 15, 15, 15],
+    filename: `SI_Eval_Classe_${date.replace(/\//g, '-')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(pdfContent).save().then(() => {
+    showToast('✓ PDF téléchargé');
+  });
+}
+
+// ===================== GOOGLE SHEETS =====================
+function exportToSheets() {
+  if (scannedData.length === 0) { showToast('❌ Aucune donnée', true); return; }
+
+  let tsv = 'Nom\tPrénom\tClasse\tNote\tTotal\tCommentaire\n';
+  scannedData.forEach(st => {
+    tsv += `${st.nom}\t${st.prenom}\t${st.classe}\t${st.note}\t${st.total}\t${st.commentaire}\n`;
+  });
+
+  navigator.clipboard.writeText(tsv).then(() => {
+    showToast('📋 Données copiées ! Collez dans Google Sheets');
+    window.open('https://sheets.new', '_blank');
+  }).catch(() => { showToast('❌ Erreur copie', true); });
+}
+
+// ===================== CLEAR =====================
+function clearAll() {
+  if (!confirm('Effacer toutes les données collectées ?')) return;
+  scannedData = [];
+  updateDisplay();
+  Object.values(chartInstances).forEach(c => c.destroy());
+  chartInstances = {};
+  saveData();
+  showToast('🗑 Données effacées');
+}
+
+// ===================== TOAST =====================
+function showToast(msg, isError) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.background = isError ? 'var(--wrong)' : 'var(--correct)';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ===================== LOCAL STORAGE =====================
+function saveData() { try { localStorage.setItem('si_eval_scans', JSON.stringify(scannedData)); } catch (e) {} }
+function loadData() {
+  try {
+    const saved = localStorage.getItem('si_eval_scans');
+    if (saved) { scannedData = JSON.parse(saved); updateDisplay(); updateCharts(); updateComments(); }
+  } catch (e) {}
+}
+
+// ===================== INIT =====================
+loadData();
+setInterval(saveData, 10000);
+</script>
+</body>
+</html>
