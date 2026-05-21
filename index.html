@@ -146,7 +146,7 @@
 
 <div class="manual-input">
   <label>Saisie manuelle (si QR code illisible)</label>
-  <textarea id="manualData" rows="3" placeholder="Collez ici le contenu Base64 du QR code..."></textarea>
+  <textarea id="manualData" rows="3" placeholder="Collez ici l?URL du QR code ou le contenu Base64..."></textarea>
   <button class="btn btn-secondary" onclick="processManual()">➕ Ajouter manuellement</button>
 </div>
 
@@ -220,9 +220,20 @@ let isScanning = false;
 let chartInstances = {};
 
 // ===================== QR DECODE =====================
-function decodeQRData(base64String) {
+function extractPayload(rawData) {
+  const raw = String(rawData || '').trim();
+  if (!raw) return '';
   try {
-    const clean = base64String.replace(/\s/g, '');
+    const url = new URL(raw);
+    return url.searchParams.get('data') || raw;
+  } catch (_err) {
+    return raw;
+  }
+}
+
+function decodeQRData(rawData) {
+  try {
+    const clean = extractPayload(rawData).replace(/\s/g, '');
     const csvRow = decodeURIComponent(escape(atob(clean)));
     const parts = csvRow.split(';');
 
@@ -291,8 +302,8 @@ function stopScan() {
 }
 
 // ===================== PROCESS DATA =====================
-function processQRData(base64Data) {
-  const student = decodeQRData(base64Data);
+function processQRData(qrData) {
+  const student = decodeQRData(qrData);
   if (!student) { showToast('❌ QR code invalide', true); return; }
 
   const exists = scannedData.find(s => s.nom === student.nom && s.prenom === student.prenom);
@@ -311,6 +322,15 @@ function processManual() {
   if (!text) return;
   processQRData(text);
   document.getElementById('manualData').value = '';
+}
+
+function processUrlPayloadOnLoad() {
+  const params = new URLSearchParams(window.location.search);
+  const payload = params.get('data');
+  if (!payload) return;
+  processQRData(payload);
+  const cleanUrl = window.location.origin + window.location.pathname;
+  window.history.replaceState({}, document.title, cleanUrl);
 }
 
 // ===================== DISPLAY =====================
@@ -453,7 +473,8 @@ function downloadCSV() {
     csv += `${i + 1};${st.nom};${st.prenom};${st.classe};${st.date};${st.heure};${st.qcmCount};${st.calcCount};`;
     st.answers.forEach(a => { csv += `${a.qcm ? 'Correct' : 'Incorrect'};${a.appNum};${a.points};`; });
     for (let j = st.answers.length; j < maxQ; j++) csv += '—;—;0;';
-    csv += `${st.total};${st.note};"${(st.commentaire || '').replace(/"/g, '""')}"`;${st.difficulte};${st.temps}\n`;
+    csv += `${st.total};${st.note};"${(st.commentaire || '').replace(/"/g, '""')}";${st.difficulte};${st.temps}
+`;
   });
 
   const notes = scannedData.map(s => s.note);
