@@ -147,7 +147,7 @@
 
   <section class="panel manual">
     <h3>Saisie manuelle ou lien de secours</h3>
-    <textarea id="manualData" placeholder="Coller ici l'URL du QR code ou le contenu Base64..."></textarea>
+    <textarea id="manualData" placeholder="Coller ici le code SI3 de secours, l'URL du QR ou l'ancien Base64..."></textarea>
     <button class="btn primary" style="width:100%;margin-top:8px" onclick="processManual()">Ajouter cette copie</button>
   </section>
 
@@ -176,6 +176,7 @@
   <div class="actions">
     <button class="btn bad" onclick="clearAll()">Effacer la collecte</button>
     <button class="btn" onclick="hideReview()">Masquer fiche</button>
+    <button class="btn" onclick="quitApp()">Quitter</button>
   </div>
 </div>
 
@@ -204,6 +205,8 @@ let selectedIndex = -1;
 function extractPayload(rawData) {
   const raw = String(rawData || '').trim();
   if (!raw) return '';
+  const compactMatch = raw.match(/SI3\.[A-Za-z0-9_-]+/);
+  if (compactMatch) return compactMatch[0];
   try {
     const url = new URL(raw);
     return url.searchParams.get('data') || raw;
@@ -212,10 +215,19 @@ function extractPayload(rawData) {
   }
 }
 
+
+function decodePayloadToCsv(rawData) {
+  const clean = extractPayload(rawData).replace(/\s/g, '');
+  let payload = clean;
+  if (payload.startsWith('SI3.')) {
+    payload = payload.slice(4).replace(/-/g, '+').replace(/_/g, '/');
+  }
+  while (payload.length % 4) payload += '=';
+  return decodeURIComponent(escape(atob(payload)));
+}
 function decodeQRData(rawData) {
   try {
-    const clean = extractPayload(rawData).replace(/\s/g, '');
-    const csvRow = decodeURIComponent(escape(atob(clean)));
+    const csvRow = decodePayloadToCsv(rawData);
     const parts = csvRow.split(';');
     const student = {
       nom: parts[0] || '', prenom: parts[1] || '', classe: parts[2] || '',
@@ -450,6 +462,13 @@ function exportToSheets() {
   navigator.clipboard.writeText(tsv).then(() => { showToast('Donnees copiees pour Google Sheets'); window.open('https://sheets.new', '_blank'); }).catch(() => showToast('Copie impossible', true));
 }
 
+function quitApp() {
+  saveData();
+  if (isScanning) stopScan();
+  showToast('Collecte sauvegardee. Vous pouvez fermer cet onglet.');
+  setTimeout(() => { try { window.close(); } catch (e) {} }, 250);
+}
+
 function clearAll() {
   if (!confirm('Effacer toutes les copies collectees sur ce telephone ?')) return;
   scannedData = [];
@@ -477,3 +496,6 @@ setInterval(saveData, 10000);
 </script>
 </body>
 </html>
+
+
+
