@@ -245,7 +245,7 @@ function decodeQRData(rawData) {
     };
 
     let idx = 5, qNum = 1;
-    while (idx + 2 < parts.length - 4) {
+    while (idx + 2 < parts.length - 5) {
       const qcm = parts[idx] === '1' || parts[idx] === 'Correct';
       student.answers.push({ qcm: qcm, appNum: parts[idx + 1], points: parseInt(parts[idx + 2]) || 0 });
       if (qcm) student.qcmCount++;
@@ -253,11 +253,11 @@ function decodeQRData(rawData) {
       idx += 3; qNum++;
     }
 
-    student.total = parseInt(parts[parts.length - 4]) || 0;
-    student.note = parseInt(parts[parts.length - 3]) || 0;
-    student.commentaire = parts[parts.length - 2] || '';
-    student.difficulte = parts[parts.length - 1] || '';
-    student.temps = parts[parts.length] || '';
+    student.total = parseInt(parts[parts.length - 5]) || 0;
+    student.note = parseInt(parts[parts.length - 4]) || 0;
+    student.commentaire = parts[parts.length - 3] || '';
+    student.difficulte = parts[parts.length - 2] || '';
+    student.temps = parts[parts.length - 1] || '';
 
     return student;
   } catch (e) {
