@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SI Eval - Evaluateur mobile</title>
+<title>SI-NSI-SNT Eval - Evaluateur mobile</title>
 <style>
   :root {
     --bg: #101114; --surface: #191b20; --card: #23262d; --ink: #f4f1ea;
@@ -87,11 +87,12 @@
       <h1>Evaluateur mobile SI</h1>
       <p>Scanner, verifier, annoter et exporter les copies eleves.</p>
     </div>
-    <div class="badge">Lycée Younoussa Bamana</div>
+    <div class="badge">Lycée YB & HB</div>
   </div>
-
-  <button class="scan-btn" id="scanBtn" onclick="startScan()">Camera - scanner une copie eleve</button>
-
+  <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; width:100%;">
+    <button class="scan-btn" id="scanBtn" onclick="startScan()" style="flex:3; min-width:200px; margin-bottom:0;">Camera - scanner une copie eleve</button>
+    <button class="btn" onclick="injectMockCopy()" style="flex:1; min-width:130px; min-height:58px; background:var(--card); border:1px solid var(--accent2); color:var(--accent2); font-weight:800; font-size:13px; cursor:pointer;">[Test] Simuler Scan</button>
+  </div>
   <div class="stats">
     <div class="stat"><div class="val" id="count-scans">0</div><div class="lbl">Copies</div></div>
     <div class="stat"><div class="val" id="count-done">0</div><div class="lbl">Verifiees</div></div>
@@ -198,33 +199,99 @@ let isScanning = false;
 let selectedIndex = -1;
 
 function extractPayload(rawData) {
-  const raw = String(rawData || '').trim();
+  let raw = String(rawData || '').trim();
   if (!raw) return '';
+  
+  // Si c'est une URL, on essaie d'extraire le paramètre data
+  if (raw.includes('?data=')) {
+    try {
+      const parts = raw.split('?data=');
+      if (parts.length > 1) {
+        // Prendre la partie après ?data= et couper aux éventuels autres paramètres d'URL (avec &)
+        return parts[1].split('&')[0];
+      }
+    } catch (_) {}
+  }
+  
+  // Si c'est une URL d'un autre type mais contenant une query string, on essaie via l'API URL
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    try {
+      const url = new URL(raw);
+      const dataParam = url.searchParams.get('data');
+      if (dataParam) return dataParam;
+    } catch (_) {}
+  }
+  
   // Format SI3. standalone (legacy)
-  const compactMatch = raw.match(/SI3\.[A-Za-z0-9_-]+/);
+  const compactMatch = raw.match(/SI3\.[A-Za-z0-9_\-]+/);
   if (compactMatch) return compactMatch[0];
-  // Format URL avec paramètre ?data= (chemin principal)
-  try {
-    const url = new URL(raw);
-    const dataParam = url.searchParams.get('data');
-    if (dataParam) return dataParam;
-  } catch (_err) {}
-  return raw;
+  
+  // Si c'est une chaîne Base64 brute, on retourne la chaîne nettoyée des espaces
+  return raw.replace(/\s/g, '');
 }
 
-
 function decodePayloadToCsv(rawData) {
-  const clean = extractPayload(rawData).replace(/\s/g, '');
-  let payload = clean;
+  let payload = extractPayload(rawData);
   if (payload.startsWith('SI3.')) {
-    // Format legacy standalone : SI3.<base64url>
-    payload = payload.slice(4).replace(/-/g, '+').replace(/_/g, '/');
-  } else {
-    // Format URL : base64url standard (depuis ?data=)
-    payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+    payload = payload.slice(4);
   }
+  // Remplacer les caractères de base64url par base64 standard
+  payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+  // Ajuster le padding
   while (payload.length % 4) payload += '=';
-  return decodeURIComponent(escape(atob(payload)));
+  
+  // Décoder en gérant l'encodage UTF-8 correctement
+  try {
+    return decodeURIComponent(escape(atob(payload)));
+  } catch (e) {
+    // Fallback si escape(atob()) échoue à cause de caractères mal formés
+    try {
+      return atob(payload);
+    } catch (err) {
+      console.error("Base64 decoding failed:", err);
+      return '';
+    }
+  }
+}
+
+function injectMockCopy() {
+  const mockStudents = [
+    { nom: 'CELESTE', prenom: 'Théo', classe: 'TG3', note: 16, total: 13, qcm: 7, calc: 6, comment: "Questions bien posées, le PFD en rotation était plus difficile" },
+    { nom: 'FORTUNE', prenom: 'Océane', classe: 'TG2', note: 5, total: 4, qcm: 2, calc: 2, comment: "Je n'ai pas compris le PFD" },
+    { nom: 'MATHURIN', prenom: 'Inaya', classe: 'TG3', note: 10, total: 8, qcm: 4, calc: 4, comment: "J'ai eu du mal avec les conversions d'unités" },
+    { nom: 'DUBOIS', prenom: 'Lucas', classe: 'TG1', note: 14, total: 11, qcm: 6, calc: 5, comment: "Bonne évaluation globale" },
+    { nom: 'MARTIN', prenom: 'Léa', classe: 'TG2', note: 12, total: 10, qcm: 5, calc: 5, comment: "Assez réussi dans l'ensemble" },
+    { nom: 'PETIT', prenom: 'Antoine', classe: 'TG3', note: 8, total: 6, qcm: 3, calc: 3, comment: "Besoin de revoir les formules de puissance" }
+  ];
+  
+  const rand = mockStudents[Math.floor(Math.random() * mockStudents.length)];
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR');
+  const timeStr = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+  
+  // Simuler 8 questions
+  let csvRow = `${rand.nom};${rand.prenom};${rand.classe};${dateStr};${timeStr};`;
+  let qcmCount = 0;
+  let calcCount = 0;
+  
+  for (let i = 0; i < 8; i++) {
+    const qcmOk = (qcmCount < rand.qcm && (Math.random() > 0.3 || 8 - i <= rand.qcm - qcmCount));
+    if (qcmOk) qcmCount++;
+    const numOk = (calcCount < rand.calc && (Math.random() > 0.3 || 8 - i <= rand.calc - calcCount));
+    if (numOk) calcCount++;
+    const pts = (qcmOk ? 1 : 0) + (numOk ? 1 : 0);
+    csvRow += `${qcmOk ? '1' : '0'};${numOk ? '12.3' : '999'};${pts};`;
+  }
+  
+  const total = qcmCount + calcCount;
+  const note = Math.round(total / 16 * 20);
+  csvRow += `${total};${note};${rand.comment.replace(/;/g, ',')};3;25`;
+  
+  // Encoder en Base64 URL-safe
+  const payload = btoa(unescape(encodeURIComponent(csvRow))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const qrData = (window.location.origin + window.location.pathname) + '?data=' + payload;
+  
+  processQRData(qrData);
 }
 function decodeQRData(rawData) {
   try {
