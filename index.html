@@ -54,7 +54,7 @@
   .verifiee { background: #10351e; color: var(--ok); }
   .revoir { background: #3b2e0c; color: var(--warn); }
   .absent { background: #3b1212; color: var(--bad); }
-  .manual textarea { min-height: 64px; font-family: Consolas, monospace; font-size: 12px; }
+
   .table-wrap { overflow: auto; max-height: 44vh; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 840px; }
   th { position: sticky; top: 0; background: var(--card); color: var(--muted); text-align: left; z-index: 1; }
@@ -141,14 +141,9 @@
     </div>
     <div class="actions">
       <button class="btn ok" onclick="saveReview('verifiee')">Valider copie</button>
+      <button class="btn" onclick="downloadSelectedStudentCSV()">CSV de cet eleve</button>
       <button class="btn" onclick="saveReview()">Enregistrer</button>
     </div>
-  </section>
-
-  <section class="panel manual">
-    <h3>Saisie manuelle ou lien de secours</h3>
-    <textarea id="manualData" placeholder="Coller ici le code SI3 de secours, l'URL du QR ou l'ancien Base64..."></textarea>
-    <button class="btn primary" style="width:100%;margin-top:8px" onclick="processManual()">Ajouter cette copie</button>
   </section>
 
   <section class="panel">
@@ -205,14 +200,16 @@ let selectedIndex = -1;
 function extractPayload(rawData) {
   const raw = String(rawData || '').trim();
   if (!raw) return '';
+  // Format SI3. standalone (legacy)
   const compactMatch = raw.match(/SI3\.[A-Za-z0-9_-]+/);
   if (compactMatch) return compactMatch[0];
+  // Format URL avec paramètre ?data= (chemin principal)
   try {
     const url = new URL(raw);
-    return url.searchParams.get('data') || raw;
-  } catch (_err) {
-    return raw;
-  }
+    const dataParam = url.searchParams.get('data');
+    if (dataParam) return dataParam;
+  } catch (_err) {}
+  return raw;
 }
 
 
@@ -220,7 +217,11 @@ function decodePayloadToCsv(rawData) {
   const clean = extractPayload(rawData).replace(/\s/g, '');
   let payload = clean;
   if (payload.startsWith('SI3.')) {
+    // Format legacy standalone : SI3.<base64url>
     payload = payload.slice(4).replace(/-/g, '+').replace(/_/g, '/');
+  } else {
+    // Format URL : base64url standard (depuis ?data=)
+    payload = payload.replace(/-/g, '+').replace(/_/g, '/');
   }
   while (payload.length % 4) payload += '=';
   return decodeURIComponent(escape(atob(payload)));
@@ -271,7 +272,7 @@ async function startScan() {
     }, { highlightScanRegion: true, highlightCodeOutline: true, preferredCamera: 'environment' });
     await qrScanner.start();
   } catch (err) {
-    alert('Erreur camera : ' + err.message + '\nUtilisez la saisie manuelle si besoin.');
+    alert('Erreur camera : ' + err.message + '\nVerifiez les permissions camera puis reessayez.');
     stopScan();
   }
 }
@@ -301,14 +302,8 @@ function processQRData(qrData) {
   updateDisplay();
   openReview(selectedIndex);
   saveData();
-  showToast(student.prenom + ' ' + student.nom + ' ajoute(e)');
-}
-
-function processManual() {
-  const text = document.getElementById('manualData').value.trim();
-  if (!text) return;
-  processQRData(text);
-  document.getElementById('manualData').value = '';
+  downloadStudentCSV(student);
+  showToast(student.prenom + ' ' + student.nom + ' ajoute(e) - CSV telecharge');
 }
 
 function processUrlPayloadOnLoad() {
@@ -417,6 +412,50 @@ function updateComments() {
   });
 }
 
+function csvEscape(value) {
+  const s = String(value ?? '');
+  return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function safeFilePart(value) {
+  return String(value || 'NA').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'NA';
+}
+
+function downloadBlob(content, filename, type='text/csv;charset=utf-8;') {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function buildStudentCSV(st) {
+  const headers = ['Nom','Prenom','Classe','Date','Heure','QCM_OK','CALC_OK','Total','Note_auto','Statut','Bonus_Malus','Note_finale','Commentaire_eleve','Commentaire_enseignant','Difficulte','Temps_min'];
+  st.answers.forEach((_, i) => headers.push('Q' + (i + 1) + '_QCM', 'Q' + (i + 1) + '_AppNum', 'Q' + (i + 1) + '_Points'));
+  const final = finalNote(st);
+  const row = [st.nom, st.prenom, st.classe, st.date, st.heure, st.qcmCount, st.calcCount, st.total, st.note, st.teacherStatus || 'attente', st.teacherBonus || 0, final, st.commentaire || '', st.teacherComment || '', st.difficulte || '', st.temps || ''];
+  st.answers.forEach(a => row.push(a.qcm ? 'Correct' : 'Incorrect', a.appNum ?? '', a.points ?? 0));
+  return '\uFEFF' + headers.map(csvEscape).join(';') + '\n' + row.map(csvEscape).join(';') + '\n';
+}
+
+function studentCSVFilename(st) {
+  const stamp = new Date().toLocaleString('sv-SE').replace(/[ :]/g, '-');
+  return 'copie_SI_' + safeFilePart(st.classe) + '_' + safeFilePart(st.nom) + '_' + safeFilePart(st.prenom) + '_' + stamp + '.csv';
+}
+
+function downloadStudentCSV(student) {
+  if (!student) return;
+  downloadBlob(buildStudentCSV(student), studentCSVFilename(student));
+}
+
+function downloadSelectedStudentCSV() {
+  const st = scannedData[selectedIndex];
+  if (!st) { showToast('Aucune copie selectionnee', true); return; }
+  saveReview();
+  downloadStudentCSV(st);
+}
+
 function downloadCSV() {
   if (!scannedData.length) { showToast('Aucune donnee', true); return; }
   let csv = 'No;Nom;Prenom;Classe;Date;Heure;QCM_OK;CALC_OK;Total;Note_auto;Ajustement;Note_finale;Statut;Commentaire_eleve;Commentaire_enseignant;Difficulte;Temps_min\n';
@@ -491,11 +530,13 @@ function dateName() { return new Date().toLocaleDateString('fr-FR').replace(/\//
 function downloadBlob(content, filename, type) { const blob = new Blob([content], { type }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href); }
 
 loadData();
-processUrlPayloadOnLoad();
+
 setInterval(saveData, 10000);
 </script>
 </body>
 </html>
+
+
 
 
 
