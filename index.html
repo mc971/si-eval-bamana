@@ -55,6 +55,14 @@
   .revoir { background: #3b2e0c; color: var(--warn); }
   .absent { background: #3b1212; color: var(--bad); }
 
+  /* Manual paste zone */
+  .paste-zone { background: var(--surface); border: 2px dashed var(--accent2); border-radius: 10px; padding: 13px; margin-bottom: 12px; text-align: center; }
+  .paste-zone h3 { font-size: 13px; color: var(--accent2); margin-bottom: 6px; }
+  .paste-zone p { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+  .paste-row { display: flex; gap: 8px; align-items: stretch; }
+  .paste-row input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 10px; font-size: 12px; font-family: monospace; }
+  .paste-row button { min-height: 42px; padding: 8px 16px; }
+
   .table-wrap { overflow: auto; max-height: 44vh; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 840px; }
   th { position: sticky; top: 0; background: var(--card); color: var(--muted); text-align: left; z-index: 1; }
@@ -77,7 +85,7 @@
   .scan-hint { position: absolute; left: 20px; right: 20px; bottom: 34px; text-align: center; color: white; text-shadow: 0 2px 6px #000; font-size: 14px; }
   .toast { position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 90px); background: var(--ok); color: #062311; padding: 12px 16px; border-radius: 8px; font-weight: 800; z-index: 2000; transition: transform .25s ease; max-width: calc(100vw - 28px); text-align: center; }
   .toast.show { transform: translate(-50%, 0); }
-  @media (max-width: 620px) { body { padding: 10px; } .stats { grid-template-columns: repeat(2, 1fr); } .metrics, .two { grid-template-columns: 1fr; } .topbar { display: block; } .badge { display: inline-block; margin-top: 8px; } }
+  @media (max-width: 620px) { body { padding: 10px; } .stats { grid-template-columns: repeat(2, 1fr); } .metrics, .two { grid-template-columns: 1fr; } .topbar { display: block; } .badge { display: inline-block; margin-top: 8px; } .paste-row { flex-direction: column; } }
 </style>
 </head>
 <body>
@@ -93,6 +101,17 @@
     <button class="scan-btn" id="scanBtn" onclick="startScan()" style="flex:3; min-width:200px; margin-bottom:0;">Camera - scanner une copie eleve</button>
     <button class="btn" onclick="injectMockCopy()" style="flex:1; min-width:130px; min-height:58px; background:var(--card); border:1px solid var(--accent2); color:var(--accent2); font-weight:800; font-size:13px; cursor:pointer;">[Test] Simuler Scan</button>
   </div>
+
+  <!-- ZONE DE COLLAGE MANUEL (code de secours) -->
+  <div class="paste-zone">
+    <h3>Coller le code de secours</h3>
+    <p>Si le scan QR echoue, l'eleve peut afficher le code de secours sur son ecran. Copiez-collez le ici.</p>
+    <div class="paste-row">
+      <input type="text" id="pasteInput" placeholder="Collez ici le code Base64 (code de secours) ou l'URL complete...">
+      <button class="btn blue" onclick="processManualPaste()">Decoder</button>
+    </div>
+  </div>
+
   <div class="stats">
     <div class="stat"><div class="val" id="count-scans">0</div><div class="lbl">Copies</div></div>
     <div class="stat"><div class="val" id="count-done">0</div><div class="lbl">Verifiees</div></div>
@@ -207,13 +226,12 @@ function extractPayload(rawData) {
     try {
       const parts = raw.split('?data=');
       if (parts.length > 1) {
-        // Prendre la partie après ?data= et couper aux éventuels autres paramètres d'URL (avec &)
         return parts[1].split('&')[0];
       }
     } catch (_) {}
   }
   
-  // Si c'est une URL d'un autre type mais contenant une query string, on essaie via l'API URL
+  // Si c'est une URL d'un autre type mais contenant une query string
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
     try {
       const url = new URL(raw);
@@ -254,6 +272,17 @@ function decodePayloadToCsv(rawData) {
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// COLLAGE MANUEL DU CODE DE SECOURS
+// ═══════════════════════════════════════════════════════
+function processManualPaste() {
+  const input = document.getElementById('pasteInput');
+  const raw = input.value.trim();
+  if (!raw) { showToast('Collez un code de secours ou une URL', true); return; }
+  processQRData(raw);
+  input.value = '';
+}
+
 function injectMockCopy() {
   const mockStudents = [
     { nom: 'CELESTE', prenom: 'Théo', classe: 'TG3', note: 16, total: 13, qcm: 7, calc: 6, comment: "Questions bien posées, le PFD en rotation était plus difficile" },
@@ -269,7 +298,6 @@ function injectMockCopy() {
   const dateStr = now.toLocaleDateString('fr-FR');
   const timeStr = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
   
-  // Simuler 8 questions
   let csvRow = `${rand.nom};${rand.prenom};${rand.classe};${dateStr};${timeStr};`;
   let qcmCount = 0;
   let calcCount = 0;
@@ -287,15 +315,15 @@ function injectMockCopy() {
   const note = Math.round(total / 16 * 20);
   csvRow += `${total};${note};${rand.comment.replace(/;/g, ',')};3;25`;
   
-  // Encoder en Base64 URL-safe
+  // Encoder en Base64 URL-safe — sans le préfixe URL (format compact)
   const payload = btoa(unescape(encodeURIComponent(csvRow))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const qrData = (window.location.origin + window.location.pathname) + '?data=' + payload;
   
-  processQRData(qrData);
+  processQRData(payload);
 }
 function decodeQRData(rawData) {
   try {
     const csvRow = decodePayloadToCsv(rawData);
+    if (!csvRow) return null;
     const parts = csvRow.split(';');
     const student = {
       nom: parts[0] || '', prenom: parts[1] || '', classe: parts[2] || '',
@@ -339,7 +367,7 @@ async function startScan() {
     }, { highlightScanRegion: true, highlightCodeOutline: true, preferredCamera: 'environment' });
     await qrScanner.start();
   } catch (err) {
-    alert('Erreur camera : ' + err.message + '\nVerifiez les permissions camera puis reessayez.');
+    alert('Erreur camera : ' + err.message + '\nUtilisez le champ "Coller le code de secours" ci-dessous.');
     stopScan();
   }
 }
@@ -355,7 +383,7 @@ function stopScan() {
 
 function processQRData(qrData) {
   const student = decodeQRData(qrData);
-  if (!student) { showToast('QR code invalide', true); return; }
+  if (!student) { showToast('QR code ou code invalide', true); return; }
   const existingIndex = scannedData.findIndex(s => norm(s.nom) === norm(student.nom) && norm(s.prenom) === norm(student.prenom) && norm(s.classe) === norm(student.classe));
   if (existingIndex >= 0) {
     selectedIndex = existingIndex;
@@ -594,16 +622,11 @@ function norm(s) { return String(s || '').trim().toLowerCase(); }
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 function csvCell(v) { const s = String(v ?? '').replace(/"/g, '""'); return /[;"\n\r]/.test(s) ? '"' + s + '"' : s; }
 function dateName() { return new Date().toLocaleDateString('fr-FR').replace(/\//g, '-'); }
-function downloadBlob(content, filename, type) { const blob = new Blob([content], { type }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href); }
 
 loadData();
+processUrlPayloadOnLoad();
 
 setInterval(saveData, 10000);
 </script>
 </body>
 </html>
-
-
-
-
-
