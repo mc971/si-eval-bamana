@@ -3,210 +3,331 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SI-NSI-SNT Eval - Evaluateur mobile</title>
+<title>Évaluateur — Collecte des copies</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #101114; --surface: #191b20; --card: #23262d; --ink: #f4f1ea;
-    --muted: #a9a29a; --line: #393d45; --accent: #ff8a3d; --accent2: #4aa3ff;
-    --ok: #35c46b; --warn: #f4b73f; --bad: #ef5a5a; --shadow: rgba(0,0,0,.35);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { background: var(--bg); }
-  body { min-height: 100vh; background: radial-gradient(circle at top left, #2a241f 0, transparent 34rem), var(--bg); color: var(--ink); font-family: Verdana, Geneva, sans-serif; padding: 14px; }
-  button, input, textarea, select { font: inherit; }
-  .app { max-width: 980px; margin: 0 auto; }
-  .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
-  .brand h1 { font-size: 21px; line-height: 1.15; }
-  .brand p { color: var(--muted); font-size: 12px; margin-top: 4px; }
-  .badge { border: 1px solid var(--line); color: var(--muted); padding: 7px 9px; border-radius: 8px; font-size: 11px; white-space: nowrap; background: rgba(255,255,255,.03); }
-  .scan-btn { width: 100%; min-height: 58px; border: 0; border-radius: 8px; background: var(--accent); color: #22140b; font-weight: 800; font-size: 16px; box-shadow: 0 12px 30px var(--shadow); margin-bottom: 12px; }
-  .scan-btn:active { transform: scale(.99); }
-  .scan-btn.scanning { background: var(--bad); color: white; }
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 11px; min-width: 0; }
-  .stat .val { color: var(--accent); font-size: 22px; font-weight: 800; }
-  .stat .lbl { color: var(--muted); font-size: 10px; margin-top: 2px; }
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 13px; margin-bottom: 12px; }
-  .panel h2, .panel h3 { font-size: 15px; margin-bottom: 10px; }
-  .review { display: none; border-color: var(--accent); }
-  .review.visible { display: block; }
-  .review-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
-  .review-head h2 { font-size: 18px; margin: 0; }
-  .review-head p { color: var(--muted); font-size: 12px; margin-top: 3px; }
-  .note { color: var(--accent); font-size: 26px; font-weight: 900; white-space: nowrap; }
-  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
-  .metric { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
-  .metric span { display: block; color: var(--muted); font-size: 10px; }
-  .metric strong { display: block; margin-top: 2px; font-size: 15px; }
-  .field { margin-bottom: 10px; }
-  .field label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 5px; }
-  textarea, select, input[type="number"], input[type="file"] { width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 10px; }
-  textarea { min-height: 76px; resize: vertical; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
-  .btn { border: 1px solid var(--line); border-radius: 8px; min-height: 46px; padding: 10px; background: var(--card); color: var(--ink); font-weight: 800; }
-  .btn.primary { background: var(--accent); color: #22140b; border-color: var(--accent); }
-  .btn.ok { background: var(--ok); color: #062311; border-color: var(--ok); }
-  .btn.bad { background: var(--bad); color: white; border-color: var(--bad); }
-  .btn.blue { background: var(--accent2); color: #041421; border-color: var(--accent2); }
-  .status { display: inline-block; padding: 4px 8px; border-radius: 99px; font-size: 11px; font-weight: 800; }
-  .attente { background: var(--card); color: var(--muted); }
-  .verifiee { background: #10351e; color: var(--ok); }
-  .revoir { background: #3b2e0c; color: var(--warn); }
-  .absent { background: #3b1212; color: var(--bad); }
+/* ═══════════════════════════════════════════════════════
+   ÉVALUATEUR MOBILE — design system aligné eval-maker
+   ═══════════════════════════════════════════════════════ */
+:root {
+  --bg:#0d1117; --surface:#151a21; --card:#1c222c; --card-2:#232a35;
+  --text:#ecf0f6; --text-2:#b8c1cb; --muted:#7d8590;
+  --accent:#f97316; --accent2:#3b82f6;
+  --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+  --border:#2a323e; --border-soft:#1f2530;
+  --radius:8px;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'Space Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--sans);padding:16px;font-size:14px;line-height:1.5}
+button,input,textarea,select{font:inherit}
 
-  /* Manual paste zone */
-  .paste-zone { background: var(--surface); border: 2px dashed var(--accent2); border-radius: 10px; padding: 13px; margin-bottom: 12px; text-align: center; }
-  .paste-zone h3 { font-size: 13px; color: var(--accent2); margin-bottom: 6px; }
-  .paste-zone p { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
-  .paste-row { display: flex; gap: 8px; align-items: stretch; }
-  .paste-row input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 10px; font-size: 12px; font-family: monospace; }
-  .paste-row button { min-height: 42px; padding: 8px 16px; }
+/* ── Layout ── */
+.app{max-width:760px;margin:0 auto}
 
-  .table-wrap { overflow: auto; max-height: 44vh; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 840px; }
-  th { position: sticky; top: 0; background: var(--card); color: var(--muted); text-align: left; z-index: 1; }
-  th, td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  tr { cursor: pointer; }
-  tr:hover { background: rgba(255,255,255,.03); }
-  .note-good { color: var(--ok); font-weight: 800; }
-  .note-mid { color: var(--warn); font-weight: 800; }
-  .note-bad { color: var(--bad); font-weight: 800; }
-  .empty { color: var(--muted); text-align: center; padding: 28px 10px; font-size: 13px; }
-  .comments .item { background: var(--card); border-left: 3px solid var(--accent2); border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 12px; }
-  .comments strong { color: var(--accent); }
-  .scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
-  .scanner-overlay.active { display: flex; }
-  .scanner-header { background: var(--surface); padding: 12px; display: flex; justify-content: space-between; align-items: center; }
-  .scanner-header h2 { font-size: 15px; }
-  #video-container { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; }
-  #video { width: 100%; height: 100%; object-fit: cover; }
-  .scan-frame { position: absolute; width: min(68vw, 310px); aspect-ratio: 1; border: 3px solid var(--accent); border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0,0,0,.52); }
-  .scan-hint { position: absolute; left: 20px; right: 20px; bottom: 34px; text-align: center; color: white; text-shadow: 0 2px 6px #000; font-size: 14px; }
-  .toast { position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 90px); background: var(--ok); color: #062311; padding: 12px 16px; border-radius: 8px; font-weight: 800; z-index: 2000; transition: transform .25s ease; max-width: calc(100vw - 28px); text-align: center; }
-  .toast.show { transform: translate(-50%, 0); }
-  @media (max-width: 620px) { body { padding: 10px; } .stats { grid-template-columns: repeat(2, 1fr); } .metrics, .two { grid-template-columns: 1fr; } .topbar { display: block; } .badge { display: inline-block; margin-top: 8px; } .paste-row { flex-direction: column; } }
+/* ── Header ── */
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border-soft)}
+.header-brand{display:flex;align-items:center;gap:12px}
+.header-logo{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.header-title{font-size:16px;font-weight:700;letter-spacing:-0.02em}
+.header-sub{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.06em;margin-top:1px}
+.header-badge{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--muted);border:1px solid var(--border);border-radius:99px;padding:4px 10px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+
+/* ── CTA scan ── */
+.scan-cta{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.scan-btn{flex:3;min-width:180px;min-height:54px;border:0;border-radius:var(--radius);background:var(--accent);color:#fff;font-family:var(--sans);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 4px 20px rgba(249,115,22,.25)}
+.scan-btn:hover{background:#ea6c08;box-shadow:0 4px 28px rgba(249,115,22,.4)}
+.scan-btn:active{transform:scale(.99)}
+.scan-btn.scanning{background:var(--bad);box-shadow:0 4px 20px rgba(248,81,73,.25)}
+.scan-btn .btn-icon{font-size:20px}
+.import-btn{flex:1;min-width:110px;min-height:54px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--text-2);font-family:var(--sans);font-weight:600;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color .18s}
+.import-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+
+/* ── Stats ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);padding:12px 10px;min-width:0;text-align:center}
+.stat-val{color:var(--accent);font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-0.02em}
+.stat-lbl{color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;margin-top:3px}
+.stat.stat-avg .stat-val{color:var(--accent2)}
+.stat.stat-done .stat-val{color:var(--ok)}
+.stat.stat-review .stat-val{color:var(--warn)}
+
+/* ── Review panel ── */
+.review-panel{background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius);padding:16px;margin-bottom:14px;display:none;animation:slideIn .22s ease}
+.review-panel.visible{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.review-name{font-size:18px;font-weight:700;letter-spacing:-0.01em;line-height:1.2}
+.review-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+.review-note{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent);white-space:nowrap;letter-spacing:-0.02em;flex-shrink:0}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.metric{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius);padding:10px;text-align:center}
+.metric-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+.metric-val{font-size:16px;font-weight:700;margin-top:4px;font-family:var(--mono)}
+
+/* ── Fields ── */
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;font-family:var(--mono)}
+textarea,select,input[type="number"],input[type="file"]{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:9px 12px;outline:none;transition:border-color .18s;font-family:var(--sans);font-size:13px}
+textarea:focus,select:focus,input:focus{border-color:var(--accent)}
+textarea{min-height:70px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:var(--radius);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);transition:all .18s;white-space:nowrap;min-height:42px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.primary:hover{background:#ea6c08}
+.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}.btn.ok:hover{background:#2da044}
+.btn.bad{background:var(--bad);color:#fff;border-color:var(--bad)}.btn.bad:hover{filter:brightness(1.1)}
+.btn.blue{background:var(--accent2);color:#fff;border-color:var(--accent2)}.btn.blue:hover{background:#2563eb}
+.btn.ghost{background:transparent;color:var(--muted)}.btn.ghost:hover{color:var(--text);border-color:var(--border)}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.action-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+
+/* ── Divider ── */
+.divider{height:1px;background:var(--border-soft);margin:14px 0}
+
+/* ── Panel ── */
+.panel{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+.panel-title{font-size:11px;font-weight:700;color:var(--text-2);font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel-title::before{content:'';width:3px;height:13px;background:var(--accent);border-radius:99px;flex-shrink:0}
+
+/* ── Table copies ── */
+.table-wrap{overflow:auto;max-height:42vh;border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
+th{position:sticky;top:0;background:var(--card-2);color:var(--muted);text-align:left;z-index:1;font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:9px 10px;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--border-soft);vertical-align:middle}
+tr{cursor:pointer;transition:background .1s}
+tr:hover td{background:rgba(255,255,255,.02)}
+.note-good{color:var(--ok);font-weight:700;font-family:var(--mono)}
+.note-mid{color:var(--warn);font-weight:700;font-family:var(--mono)}
+.note-bad{color:var(--bad);font-weight:700;font-family:var(--mono)}
+.empty-state{color:var(--muted);text-align:center;padding:36px 10px;font-size:13px}
+.empty-icon{font-size:32px;margin-bottom:8px}
+
+/* ── Status badges ── */
+.status{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:0.06em}
+.status::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.attente{background:rgba(125,133,144,.12);color:var(--muted)}.attente::before{background:var(--muted)}
+.verifiee{background:rgba(63,185,80,.12);color:var(--ok)}.verifiee::before{background:var(--ok)}
+.revoir{background:rgba(210,153,34,.12);color:var(--warn)}.revoir::before{background:var(--warn)}
+.absent{background:rgba(248,81,73,.12);color:var(--bad)}.absent::before{background:var(--bad)}
+
+/* ── Comments ── */
+.comment-item{background:var(--card);border-left:3px solid var(--accent2);border-radius:0 6px 6px 0;padding:10px 12px;margin-bottom:8px;font-size:12px;line-height:1.5}
+.comment-name{font-weight:700;color:var(--accent);font-size:11px;font-family:var(--mono);margin-bottom:4px}
+
+/* ── Scanner overlay ── */
+.scanner-overlay{display:none;position:fixed;inset:0;background:#000;z-index:1000;flex-direction:column}
+.scanner-overlay.active{display:flex}
+.scanner-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.scanner-header h2{font-size:14px;font-weight:600;font-family:var(--mono);letter-spacing:0.06em}
+#video-container{flex:1;position:relative;display:flex;align-items:center;justify-content:center;background:#000}
+#video{width:100%;height:100%;object-fit:cover}
+.scan-frame{position:absolute;width:min(68vw,300px);aspect-ratio:1;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.55)}
+.scan-corners::before,.scan-corners::after{content:'';position:absolute;width:22px;height:22px;border-color:var(--accent);border-style:solid;border-radius:3px}
+.scan-hint{position:absolute;left:20px;right:20px;bottom:32px;text-align:center;color:rgba(255,255,255,.8);font-size:13px;font-family:var(--mono)}
+
+/* ── Toast ── */
+.scroll-btns{position:fixed;bottom:80px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:500}
+.scroll-btn{width:36px;height:36px;border-radius:50%;background:var(--card-2);border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .18s;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.scroll-btn:hover{border-color:var(--accent);color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(16px);background:var(--card-2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:var(--radius);font-size:13px;font-weight:600;font-family:var(--sans);z-index:2000;transition:all .22s;opacity:0;max-width:calc(100vw - 32px);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok-t{border-color:var(--ok);color:var(--ok)}
+.toast.err-t{border-color:var(--bad);color:var(--bad)}
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  body{padding:12px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .metrics,.two{grid-template-columns:1fr}
+  .header{flex-wrap:wrap}
+  .action-grid-3{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="topbar">
-    <div class="brand">
-      <h1>Evaluateur mobile SI</h1>
-      <p>Scanner, verifier, annoter et exporter les copies eleves.</p>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-brand">
+      <div class="header-logo">📋</div>
+      <div>
+        <div class="header-title">Évaluateur</div>
+        <div class="header-sub">Collecte · Annotation · Export</div>
+      </div>
     </div>
-    <div class="badge">Lycée YB & HB</div>
-  </div>
-  <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; width:100%;">
-    <button class="scan-btn" id="scanBtn" onclick="startScan()" style="flex:3; min-width:200px; margin-bottom:0;">Camera - scanner une copie eleve</button>
-    <button class="btn" onclick="injectMockCopy()" style="flex:1; min-width:130px; min-height:58px; background:var(--card); border:1px solid var(--accent2); color:var(--accent2); font-weight:800; font-size:13px; cursor:pointer;">[Test] Simuler Scan</button>
+    <div class="header-badge" id="header-badge">TEST</div>
   </div>
 
-  <!-- ZONE DE COLLAGE MANUEL (code de secours) -->
-  <div class="paste-zone">
-    <h3>Coller le code de secours</h3>
-    <p>Si le scan QR echoue, l'eleve peut afficher le code de secours sur son ecran. Copiez-collez le ici.</p>
-    <div class="paste-row">
-      <input type="text" id="pasteInput" placeholder="Collez ici le code Base64 (code de secours) ou l'URL complete...">
-      <button class="btn blue" onclick="processManualPaste()">Decoder</button>
-    </div>
+  <!-- CTA SCAN -->
+  <div class="scan-cta">
+    <button class="scan-btn" id="scanBtn" onclick="startScan()">
+      <span class="btn-icon">📷</span>
+      Scanner une copie élève
+    </button>
+    <label class="import-btn" title="Importer un fichier JSON de secours">
+      📂 JSON
+      <input type="file" id="jsonImportInput" accept=".json" style="display:none" onchange="importBackupJSON(event)">
+    </label>
   </div>
 
+  <!-- STATS -->
   <div class="stats">
-    <div class="stat"><div class="val" id="count-scans">0</div><div class="lbl">Copies</div></div>
-    <div class="stat"><div class="val" id="count-done">0</div><div class="lbl">Verifiees</div></div>
-    <div class="stat"><div class="val" id="count-avg">-</div><div class="lbl">Moyenne</div></div>
-    <div class="stat"><div class="val" id="count-review">0</div><div class="lbl">A revoir</div></div>
+    <div class="stat">
+      <div class="stat-val" id="count-scans">0</div>
+      <div class="stat-lbl">Copies</div>
+    </div>
+    <div class="stat stat-done">
+      <div class="stat-val" id="count-done">0</div>
+      <div class="stat-lbl">Vérifiées</div>
+    </div>
+    <div class="stat stat-avg">
+      <div class="stat-val" id="count-avg">—</div>
+      <div class="stat-lbl">Moyenne</div>
+    </div>
+    <div class="stat stat-review">
+      <div class="stat-val" id="count-review">0</div>
+      <div class="stat-lbl">À revoir</div>
+    </div>
   </div>
 
-  <section class="panel review" id="reviewPanel">
+  <!-- REVIEW PANEL -->
+  <section class="review-panel" id="reviewPanel">
     <div class="review-head">
       <div>
-        <h2 id="reviewName">Copie eleve</h2>
-        <p id="reviewMeta">Selectionnez une ligne ou scannez un QR code.</p>
+        <div class="review-name" id="reviewName">Copie élève</div>
+        <div class="review-meta" id="reviewMeta">Sélectionnez une ligne ou scannez un QR code.</div>
       </div>
-      <div class="note" id="reviewNote">-/20</div>
+      <div class="review-note" id="reviewNote">—/20</div>
     </div>
     <div class="metrics">
-      <div class="metric"><span>QCM</span><strong id="reviewQcm">-/8</strong></div>
-      <div class="metric"><span>Calculs</span><strong id="reviewCalc">-/8</strong></div>
-      <div class="metric"><span>Total auto</span><strong id="reviewTotal">-/16</strong></div>
+      <div class="metric">
+        <div class="metric-lbl">QCM</div>
+        <div class="metric-val" id="reviewQcm">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-lbl">Calculs</div>
+        <div class="metric-val" id="reviewCalc">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-lbl">Total auto</div>
+        <div class="metric-val" id="reviewTotal">—</div>
+      </div>
     </div>
     <div class="field">
-      <label>Commentaire de l'eleve</label>
-      <textarea id="studentComment" readonly></textarea>
+      <label>Commentaire de l'élève</label>
+      <textarea id="studentComment" readonly style="color:var(--text-2);font-size:12px"></textarea>
     </div>
     <div class="two">
       <div class="field">
         <label>Statut de traitement</label>
         <select id="teacherStatus">
           <option value="attente">En attente</option>
-          <option value="verifiee">Copie verifiee</option>
-          <option value="revoir">A revoir</option>
-          <option value="absent">Absent / non traite</option>
+          <option value="verifiee">✓ Copie vérifiée</option>
+          <option value="revoir">⚠ À revoir</option>
+          <option value="absent">✗ Absent / non traité</option>
         </select>
       </div>
       <div class="field">
-        <label>Ajustement note (bonus/malus)</label>
+        <label>Ajustement note (±pts)</label>
         <input id="teacherBonus" type="number" step="0.25" min="-20" max="20" value="0">
       </div>
     </div>
     <div class="field">
       <label>Commentaire enseignant</label>
-      <textarea id="teacherComment" placeholder="Remarque de correction, point a reprendre, validation de la copie..."></textarea>
+      <textarea id="teacherComment" placeholder="Remarque, point à reprendre, validation…"></textarea>
     </div>
     <div class="field">
-      <label>Photo de la copie (facultatif, stockee dans ce navigateur)</label>
+      <label>Photo de la copie (facultatif)</label>
       <input id="copyPhoto" type="file" accept="image/*" capture="environment">
     </div>
-    <div class="actions">
-      <button class="btn ok" onclick="saveReview('verifiee')">Valider copie</button>
-      <button class="btn" onclick="downloadSelectedStudentCSV()">CSV de cet eleve</button>
-      <button class="btn" onclick="saveReview()">Enregistrer</button>
+    <div class="action-grid">
+      <button class="btn ok" onclick="saveReview('verifiee')">✓ Valider la copie</button>
+      <button class="btn" onclick="saveReview()">💾 Enregistrer</button>
     </div>
   </section>
 
-  <section class="panel">
-    <h3>Copies scannees</h3>
+  <!-- TABLE COPIES -->
+  <div class="panel">
+    <div class="panel-title">Copies scannées</div>
     <div class="table-wrap">
-      <div class="empty" id="emptyState">Aucune copie scannee pour le moment.</div>
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📭</div>
+        Aucune copie scannée pour le moment.<br>
+        <span style="font-size:12px;color:var(--muted)">Scannez un QR code ou importez un JSON de secours.</span>
+      </div>
       <table id="dataTable" style="display:none">
-        <thead><tr><th>#</th><th>Eleve</th><th>Classe</th><th>Auto</th><th>Final</th><th>Statut</th><th>QCM</th><th>Calc</th><th>Correcteur</th></tr></thead>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Élève</th>
+            <th>Classe</th>
+            <th>Matière</th>
+            <th>Auto</th>
+            <th>Final</th>
+            <th>Statut</th>
+            <th>QCM</th>
+            <th>Calc</th>
+            <th>Correcteur</th>
+          </tr>
+        </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
-  </section>
+  </div>
 
-  <section class="panel comments" id="commentSection" style="display:none">
-    <h3>Commentaires eleves</h3>
+  <!-- COMMENTAIRES -->
+  <div class="panel comments" id="commentSection" style="display:none">
+    <div class="panel-title">Commentaires élèves</div>
     <div id="commentsList"></div>
-  </section>
-
-  <div class="actions">
-    <button class="btn primary" onclick="downloadCSV()">Exporter CSV</button>
-    <button class="btn blue" onclick="downloadExcel()">Exporter Excel</button>
-    <button class="btn" onclick="downloadPDF()">Rapport PDF</button>
-    <button class="btn" onclick="exportToSheets()">Google Sheets</button>
   </div>
-  <div class="actions">
-    <button class="btn bad" onclick="clearAll()">Effacer la collecte</button>
-    <button class="btn" onclick="hideReview()">Masquer fiche</button>
-    <button class="btn" onclick="quitApp()">Quitter</button>
-  </div>
-</div>
 
+  <!-- EXPORTS -->
+  <div class="panel">
+    <div class="panel-title">Exports</div>
+    <div class="action-grid-3">
+      <button class="btn primary" onclick="downloadCSV()">⬇ CSV</button>
+      <button class="btn blue" onclick="downloadExcel()">⬇ Excel</button>
+      <button class="btn" onclick="downloadPDF()">⬇ PDF</button>
+    </div>
+  </div>
+
+  <!-- GESTION -->
+  <div class="panel">
+    <div class="panel-title">Gestion</div>
+    <div class="action-grid">
+      <button class="btn bad" onclick="clearAll()">↺ Réinitialiser</button>
+      <button class="btn ghost" onclick="hideReview()">✕ Masquer fiche</button>
+    </div>
+    <button class="btn ghost" style="width:100%;margin-top:8px" onclick="quitApp()">⏻ Quitter</button>
+  </div>
+
+</div><!-- /app -->
+
+<!-- SCANNER OVERLAY -->
 <div class="scanner-overlay" id="scannerOverlay">
   <div class="scanner-header">
     <h2>Scanner QR code</h2>
-    <button class="btn bad" style="min-height:36px;padding:6px 12px" onclick="stopScan()">Fermer</button>
+    <button class="btn bad" style="min-height:34px;padding:5px 12px;font-size:12px" onclick="stopScan()">✕ Fermer</button>
   </div>
   <div id="video-container">
     <video id="video" autoplay playsinline></video>
     <div class="scan-frame"></div>
-    <div class="scan-hint">Placez le QR code dans le cadre.</div>
+    <div class="scan-hint">Placez le QR code dans le cadre</div>
   </div>
 </div>
-<div class="toast" id="toast">Copie ajoutee</div>
+
+<div class="scroll-btns">
+  <button class="scroll-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Haut de page">▲</button>
+  <button class="scroll-btn" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" title="Bas de page">▼</button>
+</div>
+<div class="toast" id="toast"></div>
 
 <script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -217,157 +338,119 @@ let qrScanner = null;
 let isScanning = false;
 let selectedIndex = -1;
 
+// ═══════════════════════════════════════════════════
+// DÉCODAGE PAYLOAD
+// ═══════════════════════════════════════════════════
 function extractPayload(rawData) {
   let raw = String(rawData || '').trim();
   if (!raw) return '';
-  
-  // Si c'est une URL, on essaie d'extraire le paramètre data
   if (raw.includes('?data=')) {
-    try {
-      const parts = raw.split('?data=');
-      if (parts.length > 1) {
-        return parts[1].split('&')[0];
-      }
-    } catch (_) {}
+    try { const p = raw.split('?data='); if (p.length > 1) return p[1].split('&')[0]; } catch(_) {}
   }
-  
-  // Si c'est une URL d'un autre type mais contenant une query string
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
-    try {
-      const url = new URL(raw);
-      const dataParam = url.searchParams.get('data');
-      if (dataParam) return dataParam;
-    } catch (_) {}
+    try { const u = new URL(raw); const d = u.searchParams.get('data'); if (d) return d; } catch(_) {}
   }
-  
-  // Format SI3. standalone (legacy)
-  const compactMatch = raw.match(/SI3\.[A-Za-z0-9_\-]+/);
-  if (compactMatch) return compactMatch[0];
-  
-  // Si c'est une chaîne Base64 brute, on retourne la chaîne nettoyée des espaces
+  const m = raw.match(/SI3\.[A-Za-z0-9_\-]+/);
+  if (m) return m[0];
   return raw.replace(/\s/g, '');
 }
 
 function decodePayloadToCsv(rawData) {
   let payload = extractPayload(rawData);
-  if (payload.startsWith('SI3.')) {
-    payload = payload.slice(4);
-  }
-  // Remplacer les caractères de base64url par base64 standard
+  if (payload.startsWith('SI3.')) payload = payload.slice(4);
   payload = payload.replace(/-/g, '+').replace(/_/g, '/');
-  // Ajuster le padding
   while (payload.length % 4) payload += '=';
-  
-  // Décoder en gérant l'encodage UTF-8 correctement
-  try {
-    return decodeURIComponent(escape(atob(payload)));
-  } catch (e) {
-    // Fallback si escape(atob()) échoue à cause de caractères mal formés
-    try {
-      return atob(payload);
-    } catch (err) {
-      console.error("Base64 decoding failed:", err);
-      return '';
-    }
-  }
+  try { return decodeURIComponent(escape(atob(payload))); }
+  catch(e) { try { return atob(payload); } catch(err) { return ''; } }
 }
 
-// ═══════════════════════════════════════════════════════
-// COLLAGE MANUEL DU CODE DE SECOURS
-// ═══════════════════════════════════════════════════════
-function processManualPaste() {
-  const input = document.getElementById('pasteInput');
-  const raw = input.value.trim();
-  if (!raw) { showToast('Collez un code de secours ou une URL', true); return; }
-  processQRData(raw);
-  input.value = '';
-}
-
-function injectMockCopy() {
-  const mockStudents = [
-    { nom: 'CELESTE', prenom: 'Théo', classe: 'TG3', note: 16, total: 13, qcm: 7, calc: 6, comment: "Questions bien posées, le PFD en rotation était plus difficile" },
-    { nom: 'FORTUNE', prenom: 'Océane', classe: 'TG2', note: 5, total: 4, qcm: 2, calc: 2, comment: "Je n'ai pas compris le PFD" },
-    { nom: 'MATHURIN', prenom: 'Inaya', classe: 'TG3', note: 10, total: 8, qcm: 4, calc: 4, comment: "J'ai eu du mal avec les conversions d'unités" },
-    { nom: 'DUBOIS', prenom: 'Lucas', classe: 'TG1', note: 14, total: 11, qcm: 6, calc: 5, comment: "Bonne évaluation globale" },
-    { nom: 'MARTIN', prenom: 'Léa', classe: 'TG2', note: 12, total: 10, qcm: 5, calc: 5, comment: "Assez réussi dans l'ensemble" },
-    { nom: 'PETIT', prenom: 'Antoine', classe: 'TG3', note: 8, total: 6, qcm: 3, calc: 3, comment: "Besoin de revoir les formules de puissance" }
-  ];
-  
-  const rand = mockStudents[Math.floor(Math.random() * mockStudents.length)];
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('fr-FR');
-  const timeStr = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-  
-  let csvRow = `${rand.nom};${rand.prenom};${rand.classe};${dateStr};${timeStr};`;
-  let qcmCount = 0;
-  let calcCount = 0;
-  
-  for (let i = 0; i < 8; i++) {
-    const qcmOk = (qcmCount < rand.qcm && (Math.random() > 0.3 || 8 - i <= rand.qcm - qcmCount));
-    if (qcmOk) qcmCount++;
-    const numOk = (calcCount < rand.calc && (Math.random() > 0.3 || 8 - i <= rand.calc - calcCount));
-    if (numOk) calcCount++;
-    const pts = (qcmOk ? 1 : 0) + (numOk ? 1 : 0);
-    csvRow += `${qcmOk ? '1' : '0'};${numOk ? '12.3' : '999'};${pts};`;
-  }
-  
-  const total = qcmCount + calcCount;
-  const note = Math.round(total / 16 * 20);
-  csvRow += `${total};${note};${rand.comment.replace(/;/g, ',')};3;25`;
-  
-  // Encoder en Base64 URL-safe — sans le préfixe URL (format compact)
-  const payload = btoa(unescape(encodeURIComponent(csvRow))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  
-  processQRData(payload);
-}
 function decodeQRData(rawData) {
   try {
     const csvRow = decodePayloadToCsv(rawData);
     if (!csvRow) return null;
     const parts = csvRow.split(';');
+    const isV5 = !/^\d{2}\/\d{2}\/\d{4}$/.test(parts[3]);
+    const offset = isV5 ? 2 : 0;
     const student = {
       nom: parts[0] || '', prenom: parts[1] || '', classe: parts[2] || '',
-      date: parts[3] || '', heure: parts[4] || '', answers: [], total: 0, note: 0,
-      qcmCount: 0, calcCount: 0, commentaire: '', difficulte: '', temps: '',
-      teacherStatus: 'attente', teacherComment: '', teacherBonus: 0, copyPhoto: '', scanTime: new Date().toISOString()
+      matiere: isV5 ? (parts[3] || '') : '',
+      titreEval: isV5 ? (parts[4] || '') : '',
+      date: parts[3 + offset] || '', heure: parts[4 + offset] || '',
+      answers: [], total: 0, note: 0, qcmCount: 0, calcCount: 0,
+      commentaire: '', difficulte: '', temps: '',
+      teacherStatus: 'attente', teacherComment: '', teacherBonus: 0,
+      copyPhoto: '', scanTime: new Date().toISOString()
     };
-    let idx = 5;
+    let idx = 5 + offset;
     while (idx + 2 < parts.length - 5) {
       const qcm = parts[idx] === '1' || parts[idx] === 'Correct';
       const points = parseInt(parts[idx + 2], 10) || 0;
-      student.answers.push({ qcm: qcm, appNum: parts[idx + 1], points: points });
+      student.answers.push({ qcm, appNum: parts[idx + 1], points });
       if (qcm) student.qcmCount++;
       if (points >= 1) student.calcCount++;
       idx += 3;
     }
-    student.total = parseInt(parts[parts.length - 5], 10) || 0;
-    student.note = parseInt(parts[parts.length - 4], 10) || 0;
+    student.total    = parseInt(parts[parts.length - 5], 10) || 0;
+    student.note     = parseInt(parts[parts.length - 4], 10) || 0;
     student.commentaire = parts[parts.length - 3] || '';
-    student.difficulte = parts[parts.length - 2] || '';
-    student.temps = parts[parts.length - 1] || '';
+    student.difficulte  = parts[parts.length - 2] || '';
+    student.temps       = parts[parts.length - 1] || '';
     return student;
-  } catch (e) {
-    console.error('Decode error:', e);
-    return null;
-  }
+  } catch(e) { return null; }
 }
 
+// ═══════════════════════════════════════════════════
+// IMPORT JSON SECOURS
+// ═══════════════════════════════════════════════════
+function importBackupJSON(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const bk = JSON.parse(e.target.result);
+      const s = bk.student || {}, comments = bk.comments || {}, score = bk.score || {};
+      const answers = (bk.answers || []).map(a => ({ qcm: !!a.qcm, appNum: a.appNum ?? '', points: a.points ?? 0 }));
+      const student = {
+        nom: s.nom || '', prenom: s.prenom || '', classe: s.classe || '',
+        matiere: s.matiere || '', titreEval: s.titreEval || '',
+        date: s.date || new Date().toLocaleDateString('fr-FR'), heure: s.heure || '',
+        answers, total: score.total ?? 0, note: score.note ?? 0,
+        qcmCount: answers.filter(a => a.qcm).length,
+        calcCount: answers.filter(a => a.points >= 1).length,
+        commentaire: comments.commentaire || '',
+        difficulte: comments.difficulte || '', temps: comments.temps || '',
+        teacherStatus: 'attente', teacherComment: '', teacherBonus: 0,
+        copyPhoto: '', scanTime: new Date().toISOString()
+      };
+      if (!student.nom && !student.prenom) { showToast('JSON invalide ou incompatible', true); return; }
+      const ei = scannedData.findIndex(s => norm(s.nom) === norm(student.nom) && norm(s.prenom) === norm(student.prenom) && norm(s.classe) === norm(student.classe));
+      if (ei >= 0) { selectedIndex = ei; updateDisplay(); openReview(ei); showToast('Copie déjà présente — fiche ouverte', 'warn'); return; }
+      scannedData.push(student); selectedIndex = scannedData.length - 1;
+      updateDisplay(); openReview(selectedIndex); saveData();
+      showToast(student.prenom + ' ' + student.nom + ' importé(e) via JSON');
+    } catch(err) { showToast('Erreur JSON : ' + err.message, true); }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════
+// SCAN CAMÉRA
+// ═══════════════════════════════════════════════════
 async function startScan() {
   if (isScanning) return;
   isScanning = true;
   document.getElementById('scannerOverlay').classList.add('active');
   const btn = document.getElementById('scanBtn');
   btn.classList.add('scanning');
-  btn.textContent = 'Scan en cours...';
+  btn.innerHTML = '<span class="btn-icon">⏹</span> Scan en cours…';
   try {
     const video = document.getElementById('video');
-    qrScanner = new QrScanner(video, result => {
-      processQRData(result.data);
-      stopScan();
-    }, { highlightScanRegion: true, highlightCodeOutline: true, preferredCamera: 'environment' });
+    qrScanner = new QrScanner(video, result => { processQRData(result.data); stopScan(); },
+      { highlightScanRegion: true, highlightCodeOutline: true, preferredCamera: 'environment' });
     await qrScanner.start();
-  } catch (err) {
-    alert('Erreur camera : ' + err.message + '\nUtilisez le champ "Coller le code de secours" ci-dessous.');
+  } catch(err) {
+    showToast('Erreur caméra — réessayez ou agrandissez le QR code', true);
     stopScan();
   }
 }
@@ -378,27 +461,17 @@ function stopScan() {
   document.getElementById('scannerOverlay').classList.remove('active');
   const btn = document.getElementById('scanBtn');
   btn.classList.remove('scanning');
-  btn.textContent = 'Camera - scanner une copie eleve';
+  btn.innerHTML = '<span class="btn-icon">📷</span> Scanner une copie élève';
 }
 
 function processQRData(qrData) {
   const student = decodeQRData(qrData);
-  if (!student) { showToast('QR code ou code invalide', true); return; }
-  const existingIndex = scannedData.findIndex(s => norm(s.nom) === norm(student.nom) && norm(s.prenom) === norm(student.prenom) && norm(s.classe) === norm(student.classe));
-  if (existingIndex >= 0) {
-    selectedIndex = existingIndex;
-    updateDisplay();
-    openReview(existingIndex);
-    showToast('Copie deja scannee : fiche ouverte', true);
-    return;
-  }
-  scannedData.push(student);
-  selectedIndex = scannedData.length - 1;
-  updateDisplay();
-  openReview(selectedIndex);
-  saveData();
-  downloadStudentCSV(student);
-  showToast(student.prenom + ' ' + student.nom + ' ajoute(e) - CSV telecharge');
+  if (!student) { showToast('QR code invalide', true); return; }
+  const ei = scannedData.findIndex(s => norm(s.nom) === norm(student.nom) && norm(s.prenom) === norm(student.prenom) && norm(s.classe) === norm(student.classe));
+  if (ei >= 0) { selectedIndex = ei; updateDisplay(); openReview(ei); showToast('Copie déjà scannée — fiche ouverte', 'warn'); return; }
+  scannedData.push(student); selectedIndex = scannedData.length - 1;
+  updateDisplay(); openReview(selectedIndex); saveData();
+  showToast(student.prenom + ' ' + student.nom + ' ajouté(e)');
 }
 
 function processUrlPayloadOnLoad() {
@@ -409,16 +482,17 @@ function processUrlPayloadOnLoad() {
   window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
 }
 
-function finalNote(st) {
-  return clamp((Number(st.note) || 0) + (Number(st.teacherBonus) || 0), 0, 20);
-}
+// ═══════════════════════════════════════════════════
+// AFFICHAGE
+// ═══════════════════════════════════════════════════
+function finalNote(st) { return Math.max(0, Math.min(20, (Number(st.note) || 0) + (Number(st.teacherBonus) || 0))); }
 
 function updateDisplay() {
   document.getElementById('count-scans').textContent = scannedData.length;
-  document.getElementById('count-done').textContent = scannedData.filter(s => s.teacherStatus === 'verifiee').length;
+  document.getElementById('count-done').textContent  = scannedData.filter(s => s.teacherStatus === 'verifiee').length;
   document.getElementById('count-review').textContent = scannedData.filter(s => s.teacherStatus === 'revoir').length;
   const notes = scannedData.map(finalNote);
-  document.getElementById('count-avg').textContent = notes.length ? (notes.reduce((a,b) => a + b, 0) / notes.length).toFixed(1) : '-';
+  document.getElementById('count-avg').textContent = notes.length ? (notes.reduce((a,b) => a+b,0)/notes.length).toFixed(1) : '—';
 
   const empty = document.getElementById('emptyState');
   const table = document.getElementById('dataTable');
@@ -431,15 +505,17 @@ function updateDisplay() {
     tr.onclick = () => openReview(i);
     const nf = finalNote(st);
     const cls = nf >= 10 ? 'note-good' : nf >= 5 ? 'note-mid' : 'note-bad';
-    tr.innerHTML = '<td>' + (i + 1) + '</td>' +
-      '<td><strong>' + esc(st.nom) + '</strong><br>' + esc(st.prenom) + '</td>' +
-      '<td>' + esc(st.classe) + '</td>' +
+    tr.innerHTML =
+      '<td style="font-family:var(--mono);color:var(--muted)">' + (i+1) + '</td>' +
+      '<td><strong>' + esc(st.nom) + '</strong><br><span style="color:var(--text-2);font-size:11px">' + esc(st.prenom) + '</span></td>' +
+      '<td style="font-family:var(--mono);font-size:11px">' + esc(st.classe) + '</td>' +
+      '<td style="font-family:var(--mono);font-size:11px;color:var(--muted)">' + esc(st.matiere||'—') + '</td>' +
       '<td class="' + cls + '">' + st.note + '/20</td>' +
-      '<td class="' + cls + '">' + nf.toFixed(nf % 1 ? 2 : 0) + '/20</td>' +
+      '<td class="' + cls + '">' + nf.toFixed(nf%1?1:0) + '/20</td>' +
       '<td>' + statusLabel(st.teacherStatus) + '</td>' +
-      '<td>' + st.qcmCount + '/8</td>' +
-      '<td>' + st.calcCount + '/8</td>' +
-      '<td>' + esc(st.teacherComment || '-') + '</td>';
+      '<td style="font-family:var(--mono)">' + st.qcmCount + '</td>' +
+      '<td style="font-family:var(--mono)">' + st.calcCount + '</td>' +
+      '<td style="font-size:11px;color:var(--text-2)">' + esc(st.teacherComment || '—') + '</td>';
     tbody.appendChild(tr);
   });
   updateComments();
@@ -447,185 +523,150 @@ function updateDisplay() {
 
 function openReview(index) {
   selectedIndex = index;
-  const st = scannedData[index];
-  if (!st) return;
+  const st = scannedData[index]; if (!st) return;
+  const nf = finalNote(st);
+  const nfCls = nf >= 10 ? 'var(--ok)' : nf >= 5 ? 'var(--warn)' : 'var(--bad)';
   document.getElementById('reviewPanel').classList.add('visible');
   document.getElementById('reviewName').textContent = st.prenom + ' ' + st.nom;
-  document.getElementById('reviewMeta').textContent = st.classe + ' - scanne le ' + (st.date || '-') + ' a ' + (st.heure || '-');
-  document.getElementById('reviewNote').textContent = finalNote(st).toFixed(finalNote(st) % 1 ? 2 : 0) + '/20';
-  document.getElementById('reviewQcm').textContent = st.qcmCount + '/8';
-  document.getElementById('reviewCalc').textContent = st.calcCount + '/8';
-  document.getElementById('reviewTotal').textContent = st.total + '/16';
-  document.getElementById('studentComment').value = st.commentaire || '';
-  document.getElementById('teacherStatus').value = st.teacherStatus || 'attente';
-  document.getElementById('teacherBonus').value = st.teacherBonus || 0;
-  document.getElementById('teacherComment').value = st.teacherComment || '';
+  document.getElementById('reviewMeta').textContent =
+    [st.classe, st.matiere, st.titreEval].filter(Boolean).join(' · ') +
+    ' — scanné le ' + (st.date || '?') + ' à ' + (st.heure || '?');
+  const rn = document.getElementById('reviewNote');
+  rn.textContent = nf.toFixed(nf%1?1:0) + '/20';
+  rn.style.color = nfCls;
+  document.getElementById('reviewQcm').textContent  = st.qcmCount + '/' + (st.answers?.length || '?');
+  document.getElementById('reviewCalc').textContent = st.calcCount + '/' + (st.answers?.length || '?');
+  document.getElementById('reviewTotal').textContent = st.total + '/' + ((st.answers?.length || 0) * 2);
+  document.getElementById('studentComment').value  = st.commentaire || '';
+  document.getElementById('teacherStatus').value   = st.teacherStatus || 'attente';
+  document.getElementById('teacherBonus').value    = st.teacherBonus || 0;
+  document.getElementById('teacherComment').value  = st.teacherComment || '';
   document.getElementById('copyPhoto').value = '';
   document.getElementById('reviewPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function hideReview() {
-  document.getElementById('reviewPanel').classList.remove('visible');
-}
+function hideReview() { document.getElementById('reviewPanel').classList.remove('visible'); }
 
 function saveReview(forcedStatus) {
-  const st = scannedData[selectedIndex];
-  if (!st) return;
-  st.teacherStatus = forcedStatus || document.getElementById('teacherStatus').value || 'attente';
-  st.teacherBonus = Number(document.getElementById('teacherBonus').value || 0);
+  const st = scannedData[selectedIndex]; if (!st) return;
+  st.teacherStatus  = forcedStatus || document.getElementById('teacherStatus').value || 'attente';
+  st.teacherBonus   = Number(document.getElementById('teacherBonus').value || 0);
   st.teacherComment = document.getElementById('teacherComment').value.trim();
   const file = document.getElementById('copyPhoto').files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = () => { st.copyPhoto = reader.result; finishSave(); };
-    reader.readAsDataURL(file);
-  } else {
-    finishSave();
-  }
+  if (file) { const r = new FileReader(); r.onload = () => { st.copyPhoto = r.result; finishSave(); }; r.readAsDataURL(file); }
+  else finishSave();
 }
 
-function finishSave() {
-  saveData();
-  updateDisplay();
-  openReview(selectedIndex);
-  showToast('Fiche enseignant enregistree');
-}
+function finishSave() { saveData(); updateDisplay(); openReview(selectedIndex); showToast('Fiche enseignant enregistrée'); }
 
 function updateComments() {
   const section = document.getElementById('commentSection');
   const list = document.getElementById('commentsList');
-  const withComments = scannedData.filter(s => s.commentaire || s.teacherComment);
-  section.style.display = withComments.length ? 'block' : 'none';
+  const with_ = scannedData.filter(s => s.commentaire || s.teacherComment);
+  section.style.display = with_.length ? 'block' : 'none';
   list.innerHTML = '';
-  withComments.forEach(st => {
+  with_.forEach(st => {
     const div = document.createElement('div');
-    div.className = 'item';
-    div.innerHTML = '<strong>' + esc(st.prenom + ' ' + st.nom) + '</strong> - ' + finalNote(st).toFixed(1) + '/20<br>' +
-      (st.commentaire ? '<span>Eleve : ' + esc(st.commentaire) + '</span><br>' : '') +
-      (st.teacherComment ? '<span>Correcteur : ' + esc(st.teacherComment) + '</span>' : '');
+    div.className = 'comment-item';
+    div.innerHTML = '<div class="comment-name">' + esc(st.prenom + ' ' + st.nom) + ' · ' + finalNote(st).toFixed(1) + '/20</div>' +
+      (st.commentaire ? '<div>Élève : ' + esc(st.commentaire) + '</div>' : '') +
+      (st.teacherComment ? '<div style="color:var(--text-2)">Correcteur : ' + esc(st.teacherComment) + '</div>' : '');
     list.appendChild(div);
   });
 }
 
-function csvEscape(value) {
-  const s = String(value ?? '');
-  return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-}
-
-function safeFilePart(value) {
-  return String(value || 'NA').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'NA';
-}
-
+// ═══════════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════════
 function downloadBlob(content, filename, type='text/csv;charset=utf-8;') {
   const blob = new Blob([content], { type });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-function buildStudentCSV(st) {
-  const headers = ['Nom','Prenom','Classe','Date','Heure','QCM_OK','CALC_OK','Total','Note_auto','Statut','Bonus_Malus','Note_finale','Commentaire_eleve','Commentaire_enseignant','Difficulte','Temps_min'];
-  st.answers.forEach((_, i) => headers.push('Q' + (i + 1) + '_QCM', 'Q' + (i + 1) + '_AppNum', 'Q' + (i + 1) + '_Points'));
-  const final = finalNote(st);
-  const row = [st.nom, st.prenom, st.classe, st.date, st.heure, st.qcmCount, st.calcCount, st.total, st.note, st.teacherStatus || 'attente', st.teacherBonus || 0, final, st.commentaire || '', st.teacherComment || '', st.difficulte || '', st.temps || ''];
-  st.answers.forEach(a => row.push(a.qcm ? 'Correct' : 'Incorrect', a.appNum ?? '', a.points ?? 0));
-  return '\uFEFF' + headers.map(csvEscape).join(';') + '\n' + row.map(csvEscape).join(';') + '\n';
-}
-
-function studentCSVFilename(st) {
-  const stamp = new Date().toLocaleString('sv-SE').replace(/[ :]/g, '-');
-  return 'copie_SI_' + safeFilePart(st.classe) + '_' + safeFilePart(st.nom) + '_' + safeFilePart(st.prenom) + '_' + stamp + '.csv';
-}
-
-function downloadStudentCSV(student) {
-  if (!student) return;
-  downloadBlob(buildStudentCSV(student), studentCSVFilename(student));
-}
-
-function downloadSelectedStudentCSV() {
-  const st = scannedData[selectedIndex];
-  if (!st) { showToast('Aucune copie selectionnee', true); return; }
-  saveReview();
-  downloadStudentCSV(st);
-}
-
 function downloadCSV() {
-  if (!scannedData.length) { showToast('Aucune donnee', true); return; }
-  let csv = 'No;Nom;Prenom;Classe;Date;Heure;QCM_OK;CALC_OK;Total;Note_auto;Ajustement;Note_finale;Statut;Commentaire_eleve;Commentaire_enseignant;Difficulte;Temps_min\n';
+  if (!scannedData.length) { showToast('Aucune donnée', true); return; }
+  let csv = 'No;Nom;Prenom;Classe;Matiere;Titre_eval;Date;Heure;QCM_OK;CALC_OK;Total;Note_auto;Ajustement;Note_finale;Statut;Commentaire_eleve;Commentaire_enseignant;Difficulte;Temps_min\n';
   scannedData.forEach((st, i) => {
-    csv += [i + 1, st.nom, st.prenom, st.classe, st.date, st.heure, st.qcmCount, st.calcCount, st.total, st.note, st.teacherBonus || 0, finalNote(st), st.teacherStatus || 'attente', st.commentaire || '', st.teacherComment || '', st.difficulte || '', st.temps || ''].map(csvCell).join(';') + '\n';
+    csv += [i+1, st.nom, st.prenom, st.classe, st.matiere||'', st.titreEval||'', st.date, st.heure, st.qcmCount, st.calcCount, st.total, st.note, st.teacherBonus||0, finalNote(st), st.teacherStatus||'attente', st.commentaire||'', st.teacherComment||'', st.difficulte||'', st.temps||''].map(csvCell).join(';') + '\n';
   });
-  downloadBlob('\uFEFF' + csv, 'SI_Eval_Copies_' + dateName() + '.csv', 'text/csv;charset=utf-8;');
-  showToast('CSV telecharge');
+  downloadBlob('\uFEFF' + csv, 'Eval_Copies_' + dateName() + '.csv', 'text/csv;charset=utf-8;');
+  showToast('CSV téléchargé');
 }
 
 function downloadExcel() {
-  if (!scannedData.length) { showToast('Aucune donnee', true); return; }
-  const rows = [['No','Nom','Prenom','Classe','Date','Heure','QCM OK','Calc OK','Total','Note auto','Ajustement','Note finale','Statut','Commentaire eleve','Commentaire enseignant','Difficulte','Temps min']];
-  scannedData.forEach((st, i) => rows.push([i + 1, st.nom, st.prenom, st.classe, st.date, st.heure, st.qcmCount, st.calcCount, st.total, st.note, st.teacherBonus || 0, finalNote(st), st.teacherStatus || 'attente', st.commentaire || '', st.teacherComment || '', st.difficulte || '', st.temps || '']));
+  if (!scannedData.length) { showToast('Aucune donnée', true); return; }
+  const rows = [['No','Nom','Prenom','Classe','Matiere','Titre eval','Date','Heure','QCM OK','Calc OK','Total','Note auto','Ajustement','Note finale','Statut','Commentaire eleve','Commentaire enseignant','Difficulte','Temps min']];
+  scannedData.forEach((st, i) => rows.push([i+1, st.nom, st.prenom, st.classe, st.matiere||'', st.titreEval||'', st.date, st.heure, st.qcmCount, st.calcCount, st.total, st.note, st.teacherBonus||0, finalNote(st), st.teacherStatus||'attente', st.commentaire||'', st.teacherComment||'', st.difficulte||'', st.temps||'']));
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:5},{wch:16},{wch:16},{wch:10},{wch:12},{wch:10},{wch:8},{wch:8},{wch:8},{wch:10},{wch:10},{wch:10},{wch:14},{wch:32},{wch:36},{wch:10},{wch:10}];
+  ws['!cols'] = [{wch:4},{wch:14},{wch:14},{wch:9},{wch:8},{wch:28},{wch:11},{wch:8},{wch:7},{wch:7},{wch:7},{wch:9},{wch:9},{wch:9},{wch:12},{wch:30},{wch:34},{wch:9},{wch:9}];
   XLSX.utils.book_append_sheet(wb, ws, 'Copies');
-  XLSX.writeFile(wb, 'SI_Eval_Copies_' + dateName() + '.xlsx');
-  showToast('Excel telecharge');
+  XLSX.writeFile(wb, 'Eval_Copies_' + dateName() + '.xlsx');
+  showToast('Excel téléchargé');
 }
 
 function downloadPDF() {
-  if (!scannedData.length) { showToast('Aucune donnee', true); return; }
+  if (!scannedData.length) { showToast('Aucune donnée', true); return; }
   const notes = scannedData.map(finalNote);
-  const avg = (notes.reduce((a,b) => a + b, 0) / notes.length).toFixed(2);
+  const avg = (notes.reduce((a,b) => a+b,0)/notes.length).toFixed(2);
+  const titres = [...new Set(scannedData.map(s=>s.titreEval).filter(Boolean))].join(' / ') || 'Évaluation';
   const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;color:#111;padding:20px;font-family:Arial,sans-serif;font-size:12px;';
-  let html = '<h1>Evaluation SI - Traitement des copies</h1><p><strong>Date :</strong> ' + new Date().toLocaleDateString('fr-FR') + ' | <strong>Copies :</strong> ' + scannedData.length + ' | <strong>Moyenne finale :</strong> ' + avg + '/20</p>';
-  html += '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#ff8a3d"><th>No</th><th>Eleve</th><th>Classe</th><th>Auto</th><th>Final</th><th>Statut</th><th>Correcteur</th></tr></thead><tbody>';
+  box.style.cssText = 'background:#fff;color:#111;padding:20px;font-family:Arial,sans-serif;font-size:12px;position:absolute;left:-9999px';
+  let html = '<h2 style="margin-bottom:6px">' + esc(titres) + '</h2>';
+  html += '<p style="margin-bottom:12px;color:#555"><strong>Date :</strong> ' + new Date().toLocaleDateString('fr-FR') + ' &nbsp;|&nbsp; <strong>Copies :</strong> ' + scannedData.length + ' &nbsp;|&nbsp; <strong>Moyenne finale :</strong> ' + avg + '/20</p>';
+  html += '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f97316;color:#fff"><th style="padding:6px 8px">No</th><th>Élève</th><th>Classe</th><th>Matière</th><th>Auto</th><th>Final</th><th>Statut</th><th>Correcteur</th></tr></thead><tbody>';
   scannedData.forEach((st, i) => {
-    html += '<tr><td>' + (i + 1) + '</td><td>' + esc(st.prenom + ' ' + st.nom) + '</td><td>' + esc(st.classe) + '</td><td>' + st.note + '/20</td><td><strong>' + finalNote(st).toFixed(1) + '/20</strong></td><td>' + esc(st.teacherStatus || 'attente') + '</td><td>' + esc(st.teacherComment || '') + '</td></tr>';
+    html += '<tr style="border-bottom:1px solid #eee"><td style="padding:5px 8px">' + (i+1) + '</td><td>' + esc(st.prenom+' '+st.nom) + '</td><td>' + esc(st.classe) + '</td><td>' + esc(st.matiere||'—') + '</td><td>' + st.note + '/20</td><td><strong>' + finalNote(st).toFixed(1) + '/20</strong></td><td>' + esc(st.teacherStatus||'attente') + '</td><td>' + esc(st.teacherComment||'') + '</td></tr>';
   });
   html += '</tbody></table>';
   box.innerHTML = html;
-  html2pdf().set({ margin: 12, filename: 'SI_Eval_Copies_' + dateName() + '.pdf', image: { type: 'jpeg', quality: .98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } }).from(box).save();
+  document.body.appendChild(box);
+  html2pdf().set({ margin:12, filename:'Eval_Rapport_'+dateName()+'.pdf', image:{type:'jpeg',quality:.98}, html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'landscape'} }).from(box).save().then(() => document.body.removeChild(box));
 }
 
-function exportToSheets() {
-  if (!scannedData.length) { showToast('Aucune donnee', true); return; }
-  let tsv = 'Nom\tPrenom\tClasse\tNote finale\tStatut\tCommentaire enseignant\n';
-  scannedData.forEach(st => { tsv += [st.nom, st.prenom, st.classe, finalNote(st), st.teacherStatus || 'attente', st.teacherComment || ''].join('\t') + '\n'; });
-  navigator.clipboard.writeText(tsv).then(() => { showToast('Donnees copiees pour Google Sheets'); window.open('https://sheets.new', '_blank'); }).catch(() => showToast('Copie impossible', true));
-}
-
+// ═══════════════════════════════════════════════════
+// GESTION
+// ═══════════════════════════════════════════════════
 function quitApp() {
-  saveData();
-  if (isScanning) stopScan();
-  showToast('Collecte sauvegardee. Vous pouvez fermer cet onglet.');
-  setTimeout(() => { try { window.close(); } catch (e) {} }, 250);
+  saveData(); if (isScanning) stopScan();
+  showToast('Collecte sauvegardée — vous pouvez fermer cet onglet.');
+  setTimeout(() => { try { window.close(); } catch(e) {} }, 300);
 }
 
 function clearAll() {
-  if (!confirm('Effacer toutes les copies collectees sur ce telephone ?')) return;
-  scannedData = [];
-  selectedIndex = -1;
-  hideReview();
-  saveData();
-  updateDisplay();
-  showToast('Collecte effacee');
+  if (!confirm('Réinitialiser la collecte ?\n\nToutes les copies scannées (' + scannedData.length + ') seront supprimées.\nCette action est irréversible.')) return;
+  scannedData = []; selectedIndex = -1; hideReview(); saveData(); updateDisplay();
+  showToast('Collecte réinitialisée');
 }
 
-function saveData() { try { localStorage.setItem('si_eval_mobile_reviews', JSON.stringify(scannedData)); } catch (e) { showToast('Stockage local plein ou bloque', true); } }
-function loadData() { try { scannedData = JSON.parse(localStorage.getItem('si_eval_mobile_reviews') || '[]'); } catch (e) { scannedData = []; } updateDisplay(); }
-function showToast(msg, isError) { const t = document.getElementById('toast'); t.textContent = msg; t.style.background = isError ? 'var(--warn)' : 'var(--ok)'; t.style.color = isError ? '#241700' : '#062311'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2400); }
-function statusLabel(v) { const map = { attente: 'En attente', verifiee: 'Verifiee', revoir: 'A revoir', absent: 'Absent' }; const key = v || 'attente'; return '<span class="status ' + key + '">' + (map[key] || key) + '</span>'; }
-function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function norm(s) { return String(s || '').trim().toLowerCase(); }
-function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
-function csvCell(v) { const s = String(v ?? '').replace(/"/g, '""'); return /[;"\n\r]/.test(s) ? '"' + s + '"' : s; }
-function dateName() { return new Date().toLocaleDateString('fr-FR').replace(/\//g, '-'); }
+// ═══════════════════════════════════════════════════
+// UTILITAIRES
+// ═══════════════════════════════════════════════════
+function saveData() { try { localStorage.setItem('si_eval_mobile_reviews', JSON.stringify(scannedData)); } catch(e) { showToast('Stockage local plein ou bloqué', true); } }
+function loadData() { try { scannedData = JSON.parse(localStorage.getItem('si_eval_mobile_reviews') || '[]'); } catch(e) { scannedData = []; } updateDisplay(); }
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type === true || type === 'err' ? 'err-t' : type === 'warn' ? '' : 'ok-t');
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function statusLabel(v) {
+  const map = { attente:'En attente', verifiee:'Vérifiée', revoir:'À revoir', absent:'Absent' };
+  const key = v || 'attente';
+  return '<span class="status ' + key + '">' + (map[key] || key) + '</span>';
+}
+
+function esc(s) { return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function norm(s) { return String(s||'').trim().toLowerCase(); }
+function csvCell(v) { const s = String(v??'').replace(/"/g,'""'); return /[;"\n\r]/.test(s)?'"'+s+'"':s; }
+function dateName() { return new Date().toLocaleDateString('fr-FR').replace(/\//g,'-'); }
 
 loadData();
 processUrlPayloadOnLoad();
-
 setInterval(saveData, 10000);
 </script>
 </body>
