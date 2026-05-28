@@ -41,6 +41,11 @@ button,input,textarea,select{font:inherit}
 .scan-btn:hover{background:#ea6c08;box-shadow:0 4px 28px rgba(249,115,22,.4)}
 .scan-btn:active{transform:scale(.99)}
 .scan-btn.scanning{background:var(--bad);box-shadow:0 4px 20px rgba(248,81,73,.25)}
+.paste-qr-row{display:flex;gap:8px;margin-bottom:16px;align-items:stretch}
+.paste-qr-row input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;font-family:var(--mono)}
+.paste-qr-row input:focus{outline:none;border-color:var(--accent)}
+.paste-qr-btn{padding:0 16px;background:var(--accent);color:#fff;border:0;border-radius:var(--radius);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+.paste-qr-btn:hover{background:#ea6c08}
 .scan-btn .btn-icon{font-size:20px}
 .import-btn{flex:1;min-width:110px;min-height:54px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--text-2);font-family:var(--sans);font-weight:600;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color .18s}
 .import-btn:hover{border-color:var(--accent2);color:var(--accent2)}
@@ -177,6 +182,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </label>
   </div>
 
+  <!-- Coller code QR (scan appli caméra) -->
+  <div class="paste-qr-row">
+    <input type="text" id="paste-qr-input" placeholder="Collez ici le code scanné par l'appli photo…" autocomplete="off" autocorrect="off" spellcheck="false"
+      onkeydown="if(event.key==='Enter'){importPastedQR();}">
+    <button class="paste-qr-btn" onclick="importPastedQR()">Importer</button>
+  </div>
   <!-- STATS -->
   <div class="stats">
     <div class="stat">
@@ -408,20 +419,30 @@ function importBackupJSON(event) {
   reader.onload = function(e) {
     try {
       const bk = JSON.parse(e.target.result);
-      const s = bk.student || {}, comments = bk.comments || {}, score = bk.score || {};
-      const answers = (bk.answers || []).map(a => ({ qcm: !!a.qcm, appNum: a.appNum ?? '', points: a.points ?? 0 }));
-      const student = {
-        nom: s.nom || '', prenom: s.prenom || '', classe: s.classe || '',
-        matiere: s.matiere || '', titreEval: s.titreEval || '',
-        date: s.date || new Date().toLocaleDateString('fr-FR'), heure: s.heure || '',
-        answers, total: score.total ?? 0, note: score.note ?? 0,
-        qcmCount: answers.filter(a => a.qcm).length,
-        calcCount: answers.filter(a => a.points >= 1).length,
-        commentaire: comments.commentaire || '',
-        difficulte: comments.difficulte || '', temps: comments.temps || '',
-        teacherStatus: 'attente', teacherComment: '', teacherBonus: 0,
-        copyPhoto: '', scanTime: new Date().toISOString()
-      };
+      let student;
+      if (bk.schema === 'eval-maker-copy-v1') {
+        student = copyV1ToStudent(bk);
+      } else {
+        const s = bk.student || {}, comments = bk.comments || {}, score = bk.score || {};
+        const answers = (bk.answers || []).map(a => ({
+          qcm: !!(a.qcmOk !== undefined ? a.qcmOk : a.qcm),
+          appNum: a.numAnswer != null ? a.numAnswer : (a.appNum ?? ''),
+          points: a.points ?? 0
+        }));
+        student = {
+          nom: s.nom || '', prenom: s.prenom || '', classe: s.classe || '',
+          matiere: s.matiere || '',
+          titreEval: s.titreEval || bk.evaluation?.titre || '',
+          date: s.date || new Date().toLocaleDateString('fr-FR'), heure: s.heure || '',
+          answers, total: score.total ?? 0, note: score.note ?? 0,
+          qcmCount: answers.filter(a => a.qcm).length,
+          calcCount: answers.filter(a => a.points >= 1).length,
+          commentaire: comments.commentaire || '',
+          difficulte: comments.difficulte || '', temps: comments.temps || '',
+          teacherStatus: 'attente', teacherComment: '', teacherBonus: 0,
+          copyPhoto: '', scanTime: new Date().toISOString()
+        };
+      }
       if (!student.nom && !student.prenom) { showToast('JSON invalide ou incompatible', true); return; }
       const ei = scannedData.findIndex(s => norm(s.nom) === norm(student.nom) && norm(s.prenom) === norm(student.prenom) && norm(s.classe) === norm(student.classe));
       if (ei >= 0) { selectedIndex = ei; updateDisplay(); openReview(ei); showToast('Copie déjà présente — fiche ouverte', 'warn'); return; }
@@ -464,14 +485,86 @@ function stopScan() {
   btn.innerHTML = '<span class="btn-icon">📷</span> Scanner une copie élève';
 }
 
-function processQRData(qrData) {
-  const student = decodeQRData(qrData);
-  if (!student) { showToast('QR code invalide', true); return; }
+// ── Décodeurs EMC1 / EMC2 (format JSON copy-v1) ──
+async function decodeEMCPayload(raw) {
+  const isEMC2 = raw.startsWith('EMC2.');
+  let b64 = raw.slice(5).replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  let json;
+  if (isEMC2) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('EMC2_UNSUPPORTED');
+    const ds = new DecompressionStream('gzip');
+    const stream = new Blob([bytes]).stream().pipeThrough(ds);
+    json = new TextDecoder().decode(await new Response(stream).arrayBuffer());
+  } else {
+    json = decodeURIComponent(escape(String.fromCharCode(...bytes)));
+  }
+  return JSON.parse(json);
+}
+
+function copyV1ToStudent(copy) {
+  const s = copy.student || {}, ev = copy.evaluation || {};
+  const score = copy.score || {}, comments = copy.comments || {};
+  const answers = (copy.answers || []).map(a => ({
+    qcm: !!(a.qcmOk !== undefined ? a.qcmOk : a.qcm),
+    appNum: a.numAnswer != null ? a.numAnswer : (a.appNum ?? ''),
+    points: a.points ?? 0
+  }));
+  const dt = copy.exportedAt ? new Date(copy.exportedAt) : new Date();
+  return {
+    nom: s.nom || '', prenom: s.prenom || '',
+    classe: s.classe || ev.classe || '',
+    matiere: s.matiere || ev.matiere || '',
+    titreEval: ev.titre || '',
+    date: dt.toLocaleDateString('fr-FR'),
+    heure: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+    answers, total: score.total ?? 0, note: score.note ?? 0,
+    qcmCount: answers.filter(a => a.qcm).length,
+    calcCount: answers.filter(a => a.points >= 1).length,
+    commentaire: comments.commentaire || '',
+    difficulte: comments.difficulte || '',
+    temps: comments.temps || '',
+    teacherStatus: 'attente', teacherComment: '', teacherBonus: 0,
+    copyPhoto: '', scanTime: new Date().toISOString(),
+    evalId: ev.id || '', copyId: copy.copyId || '',
+    examIncidents: copy.incidents != null ? copy.incidents : (copy.examLog || []).length
+  };
+}
+
+async function processQRData(qrData) {
+  const raw = String(qrData || '').trim();
+  let student;
+  if (raw.startsWith('EMC1.') || raw.startsWith('EMC2.')) {
+    try {
+      const copy = await decodeEMCPayload(raw);
+      if (!copy || !copy.schema) { showToast('QR code invalide', true); return; }
+      student = copyV1ToStudent(copy);
+    } catch(err) {
+      if (err.message === 'EMC2_UNSUPPORTED') {
+        showToast("QR compressé non supporté — utilisez l'import JSON", true);
+      } else {
+        showToast('QR illisible : ' + err.message, true);
+      }
+      return;
+    }
+  } else {
+    student = decodeQRData(raw);
+  }
+  if (!student || (!student.nom && !student.prenom)) { showToast('QR code invalide', true); return; }
   const ei = scannedData.findIndex(s => norm(s.nom) === norm(student.nom) && norm(s.prenom) === norm(student.prenom) && norm(s.classe) === norm(student.classe));
   if (ei >= 0) { selectedIndex = ei; updateDisplay(); openReview(ei); showToast('Copie déjà scannée — fiche ouverte', 'warn'); return; }
   scannedData.push(student); selectedIndex = scannedData.length - 1;
   updateDisplay(); openReview(selectedIndex); saveData();
   showToast(student.prenom + ' ' + student.nom + ' ajouté(e)');
+}
+
+function importPastedQR() {
+  const el = document.getElementById('paste-qr-input');
+  const raw = (el ? el.value : '').trim();
+  if (!raw) { showToast('Aucune donnée à importer', true); return; }
+  processQRData(raw);
+  if (el) el.value = '';
 }
 
 function processUrlPayloadOnLoad() {
