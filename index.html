@@ -346,6 +346,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <script>
 let scannedData = [];
 let qrScanner = null;
+try { if (typeof QrScanner !== 'undefined') { QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js'; } } catch(_) {}
 let isScanning = false;
 let selectedIndex = -1;
 
@@ -467,12 +468,20 @@ async function startScan() {
   btn.innerHTML = '<span class="btn-icon">⏹</span> Scan en cours…';
   try {
     const video = document.getElementById('video');
+    if (video) { video.setAttribute('playsinline',''); video.muted = true; }
     qrScanner = new QrScanner(video, result => { processQRData(result.data); stopScan(); },
       { highlightScanRegion: true, highlightCodeOutline: true, preferredCamera: 'environment' });
     await qrScanner.start();
   } catch(err) {
-    showToast('Erreur caméra — réessayez ou agrandissez le QR code', true);
-    stopScan();
+    console.warn('Camera error', err);
+    const name = (err && err.name) ? err.name : 'Erreur';
+    const msg = (err && err.message) ? err.message : String(err || '');
+    showToast('Erreur caméra (' + name + ') — ' + (msg || 'vérifiez les autorisations caméra et le HTTPS'), true);
+    // Ne pas fermer l’overlay automatiquement : laisser l’utilisateur accepter la permission puis réessayer.
+    isScanning = false;
+    try { if (qrScanner) { qrScanner.stop(); qrScanner.destroy(); qrScanner = null; } } catch(_) {}
+    const btn = document.getElementById('scanBtn');
+    if (btn) { btn.classList.remove('scanning'); btn.innerHTML = '<span class="btn-icon">📷</span> Réessayer'; }
   }
 }
 
