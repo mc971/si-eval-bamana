@@ -534,10 +534,11 @@ function copyV1ToStudent(copy) {
 
 async function processQRData(qrData) {
   const raw = String(qrData || '').trim();
+  const payload = extractPayload(raw) || raw;
   let student;
-  if (raw.startsWith('EMC1.') || raw.startsWith('EMC2.')) {
+  if (payload.startsWith('EMC1.') || payload.startsWith('EMC2.')) {
     try {
-      const copy = await decodeEMCPayload(raw);
+      const copy = await decodeEMCPayload(payload);
       if (!copy || !copy.schema) { showToast('QR code invalide', true); return; }
       student = copyV1ToStudent(copy);
     } catch(err) {
