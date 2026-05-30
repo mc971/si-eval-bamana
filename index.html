@@ -498,7 +498,7 @@ async function decodeEMCPayload(raw) {
     const stream = new Blob([bytes]).stream().pipeThrough(ds);
     json = new TextDecoder().decode(await new Response(stream).arrayBuffer());
   } else {
-    json = decodeURIComponent(escape(String.fromCharCode(...bytes)));
+    var s=''; for (var i=0;i<bytes.length;i++) s += String.fromCharCode(bytes[i]); json = decodeURIComponent(escape(s));
   }
   return JSON.parse(json);
 }
