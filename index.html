@@ -460,6 +460,7 @@ function importBackupJSON(event) {
 // SCAN CAMÉRA
 // ═══════════════════════════════════════════════════
 async function startScan() {
+  if (window.location && window.location.protocol === 'file:') { showToast('Caméra bloquée en mode fichier (file://). Ouvrez la page via HTTPS (GitHub Pages).', true); return; }
   if (isScanning) return;
   isScanning = true;
   document.getElementById('scannerOverlay').classList.add('active');
@@ -471,17 +472,18 @@ async function startScan() {
     if (video) { video.setAttribute('playsinline',''); video.muted = true; }
     qrScanner = new QrScanner(video, result => { processQRData(result.data); stopScan(); },
       { highlightScanRegion: true, highlightCodeOutline: true, preferredCamera: 'environment' });
-    await qrScanner.start();
+    await Promise.race([qrScanner.start(), new Promise((_, rej) => setTimeout(() => rej(new Error('START_TIMEOUT')), 6500))]);
   } catch(err) {
     console.warn('Camera error', err);
     const name = (err && err.name) ? err.name : 'Erreur';
     const msg = (err && err.message) ? err.message : String(err || '');
-    showToast('Erreur caméra (' + name + ') — ' + (msg || 'vérifiez les autorisations caméra et le HTTPS'), true);
+    const isTimeout = msg === 'START_TIMEOUT';
+    showToast(isTimeout ? 'Caméra bloquée — ouvrez la page en HTTPS et autorisez la caméra.' : ('Erreur caméra (' + name + ') — ' + (msg || 'vérifiez les autorisations caméra et le HTTPS')), true);
     // Ne pas fermer l’overlay automatiquement : laisser l’utilisateur accepter la permission puis réessayer.
     isScanning = false;
     try { if (qrScanner) { qrScanner.stop(); qrScanner.destroy(); qrScanner = null; } } catch(_) {}
     const btn = document.getElementById('scanBtn');
-    if (btn) { btn.classList.remove('scanning'); btn.innerHTML = '<span class="btn-icon">📷</span> Réessayer'; }
+    if (btn) { btn.classList.remove('scanning'); btn.innerHTML = '<span class=\"btn-icon\">📷</span> Réessayer'; }
   }
 }
 
@@ -660,7 +662,7 @@ function saveReview(forcedStatus) {
   else finishSave();
 }
 
-function finishSave() { saveData(); updateDisplay(); openReview(selectedIndex); showToast('Fiche enseignant enregistrée'); }
+function finishSave() { saveData(); updateDisplay(); if (document.getElementById('teacherStatus') && document.getElementById('teacherStatus').value === 'verifiee') { hideReview(); } else { openReview(selectedIndex); } showToast('Fiche enseignant enregistrée'); }
 
 function updateComments() {
   const section = document.getElementById('commentSection');
